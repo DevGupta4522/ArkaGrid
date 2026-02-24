@@ -1,0 +1,5 @@
+# ESLint fixes applied
+# - Apostrophes escaped in JSX
+# - Unused variables removed
+# - Empty interface fixed
+# - Missing dependency added
