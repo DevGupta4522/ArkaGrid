@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import "./globals.css";
@@ -31,6 +32,7 @@ export default function RootLayout({
         <AuthProvider>
           <QueryProvider>{children}</QueryProvider>
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
