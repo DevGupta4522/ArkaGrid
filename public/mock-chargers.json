@@ -1,0 +1,47 @@
+[
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000001",
+    "host_id": "a1b2c3d4-0002-4000-8000-000000000002",
+    "name": "Sunrise EV Point",
+    "connector_type": "type2",
+    "speed": "ac_fast",
+    "latitude": 26.9124,
+    "longitude": 75.7873,
+    "address": "C-Scheme, Jaipur",
+    "price_per_kwh_cents": 550,
+    "is_available": true,
+    "max_power_kw": 22,
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "updated_at": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000003",
+    "host_id": "a1b2c3d4-0002-4000-8000-000000000004",
+    "name": "Pink City Charge",
+    "connector_type": "ccs2",
+    "speed": "dc_fast",
+    "latitude": 26.9350,
+    "longitude": 75.8234,
+    "address": "MI Road, Jaipur",
+    "price_per_kwh_cents": 620,
+    "is_available": true,
+    "max_power_kw": 60,
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "updated_at": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000005",
+    "host_id": "a1b2c3d4-0002-4000-8000-000000000006",
+    "name": "Jaipur Solar Hub",
+    "connector_type": "type2",
+    "speed": "ac_slow",
+    "latitude": 26.8890,
+    "longitude": 75.7512,
+    "address": "Mansarovar, Jaipur",
+    "price_per_kwh_cents": 480,
+    "is_available": false,
+    "max_power_kw": 7.4,
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "updated_at": "2025-01-01T00:00:00.000Z"
+  }
+]
