@@ -20,7 +20,7 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<"weak" | "fair" | "strong">("weak");
 
-  const token = searchParams.get("code");
+  // const token = searchParams.get("code");
 
   // Check password strength
   useEffect(() => {

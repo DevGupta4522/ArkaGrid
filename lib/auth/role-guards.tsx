@@ -56,7 +56,7 @@ export function RoleGuard({ allowedRoles, children, fallback }: RoleGuardProps) 
     return (
       fallback || (
         <div className="rounded-lg border border-amber-grid/30 bg-amber-grid/5 p-4 text-center text-sm text-muted-foreground">
-          You don't have permission to access this feature.
+          You don&apos;t have permission to access this feature.
         </div>
       )
     );

@@ -59,12 +59,12 @@ export default function ForgotPasswordPage() {
                 <div>
                   <p className="font-medium text-emerald-electric">Check your email</p>
                   <p className="text-sm text-emerald-electric/80">
-                    We've sent a password reset link to <span className="font-medium">{email}</span>
+                    We&apos;ve sent a password reset link to <span className="font-medium">{email}</span>
                   </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground ml-8">
-                The link will expire in 24 hours. If you don't see the email, check your spam folder.
+                The link will expire in 24 hours. If you don&apos;t see the email, check your spam folder.
               </p>
             </div>
           )}
@@ -112,7 +112,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                Didn't receive the email?{" "}
+                Didn&apos;t receive the email?{" "}
                 <button
                   onClick={() => setSuccess(false)}
                   className="text-emerald-electric hover:text-emerald-dark font-medium"
