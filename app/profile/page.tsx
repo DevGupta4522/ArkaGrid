@@ -51,7 +51,6 @@ export default function ProfilePage() {
 
       await updatePassword(newPassword);
       setSuccess("Password updated successfully!");
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
