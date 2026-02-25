@@ -1,20 +1,3 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "env": [
-    {
-      "key": "NEXT_PUBLIC_MAPBOX_TOKEN",
-      "description": "Optional: Mapbox token (not required with Leaflet)"
-    },
-    {
-      "key": "NEXT_PUBLIC_SUPABASE_URL",
-      "description": "Supabase project URL"
-    },
-    {
-      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-      "description": "Supabase anonymous key"
-    }
-  ]
+  "framework": "nextjs"
 }
