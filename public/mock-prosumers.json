@@ -1,0 +1,352 @@
+[
+  {
+    "id": "bab630c0-97d7-4718-b28a-062f52e985cf",
+    "name": "Prosumer 1",
+    "latitude": 26.877350360659268,
+    "longitude": 75.78855242699177,
+    "capacity_kw": 4.3
+  },
+  {
+    "id": "e85748b1-c518-4f2c-b3d0-21cf4d7401bf",
+    "name": "Prosumer 2",
+    "latitude": 26.89311316021455,
+    "longitude": 75.85686337912209,
+    "capacity_kw": 5.9
+  },
+  {
+    "id": "443067b0-d597-4eaf-ad13-0a047bb93de1",
+    "name": "Prosumer 3",
+    "latitude": 26.946089866559483,
+    "longitude": 75.83403590455232,
+    "capacity_kw": 8.3
+  },
+  {
+    "id": "195bfbc5-5991-4a96-8f61-6f3130b72d5c",
+    "name": "Prosumer 4",
+    "latitude": 26.84269374219836,
+    "longitude": 75.86429133185028,
+    "capacity_kw": 12.3
+  },
+  {
+    "id": "8bc754d9-1fb7-4508-a6b3-6fddac8f1ebf",
+    "name": "Prosumer 5",
+    "latitude": 26.87718775064596,
+    "longitude": 75.74184539413709,
+    "capacity_kw": 10.5
+  },
+  {
+    "id": "b710580c-54ee-43de-b36e-8428f25ed337",
+    "name": "Prosumer 6",
+    "latitude": 26.90803044011527,
+    "longitude": 75.76659154129969,
+    "capacity_kw": 12.2
+  },
+  {
+    "id": "1e619f93-268f-41c1-be20-01c856279ea8",
+    "name": "Prosumer 7",
+    "latitude": 26.955668030806642,
+    "longitude": 75.77840165110925,
+    "capacity_kw": 14.7
+  },
+  {
+    "id": "a349e521-842c-40fd-93e2-7d99906e57f8",
+    "name": "Prosumer 8",
+    "latitude": 26.95807260167184,
+    "longitude": 75.74019540191208,
+    "capacity_kw": 9.2
+  },
+  {
+    "id": "8968a9f3-a098-40db-b9f8-08355da65f37",
+    "name": "Prosumer 9",
+    "latitude": 26.88664606539944,
+    "longitude": 75.8509856989159,
+    "capacity_kw": 12.1
+  },
+  {
+    "id": "efec4c13-498b-48ce-98f2-3a9a5b332b88",
+    "name": "Prosumer 10",
+    "latitude": 26.987604810827442,
+    "longitude": 75.72619330627968,
+    "capacity_kw": 5.6
+  },
+  {
+    "id": "8ecf07e8-c2f9-4da0-94b0-5296d7b4d721",
+    "name": "Prosumer 11",
+    "latitude": 26.869942629802104,
+    "longitude": 75.76032933658409,
+    "capacity_kw": 7.7
+  },
+  {
+    "id": "5be59c6f-f502-4bcd-ae63-789933064062",
+    "name": "Prosumer 12",
+    "latitude": 26.89566799656069,
+    "longitude": 75.72734586001926,
+    "capacity_kw": 13
+  },
+  {
+    "id": "66c952a1-9e25-4980-978b-263aa8c7a602",
+    "name": "Prosumer 13",
+    "latitude": 26.987023849327166,
+    "longitude": 75.79366179569182,
+    "capacity_kw": 5
+  },
+  {
+    "id": "ee9f2ebc-6fe4-4843-a69e-59cb42d83da5",
+    "name": "Prosumer 14",
+    "latitude": 26.961901346478992,
+    "longitude": 75.77491121645618,
+    "capacity_kw": 14.8
+  },
+  {
+    "id": "3c37df8d-4dd3-4f91-baba-2dcdbc80bca4",
+    "name": "Prosumer 15",
+    "latitude": 26.9826643603202,
+    "longitude": 75.8035841441652,
+    "capacity_kw": 5.5
+  },
+  {
+    "id": "40b5ae55-e092-4c4f-b504-c1082aaf187a",
+    "name": "Prosumer 16",
+    "latitude": 26.853856260090556,
+    "longitude": 75.73589971299305,
+    "capacity_kw": 13.9
+  },
+  {
+    "id": "85027b32-6e0e-4cb5-84e2-945b08f597bd",
+    "name": "Prosumer 17",
+    "latitude": 26.936715925778742,
+    "longitude": 75.75078200501699,
+    "capacity_kw": 9.1
+  },
+  {
+    "id": "ceea1859-9f2a-4e38-ab10-4b0d8ad28283",
+    "name": "Prosumer 18",
+    "latitude": 26.899091185626983,
+    "longitude": 75.74592791778858,
+    "capacity_kw": 6.7
+  },
+  {
+    "id": "b29c79b4-5be3-4dff-805a-ba5c808b4686",
+    "name": "Prosumer 19",
+    "latitude": 26.969394537848054,
+    "longitude": 75.8633402348417,
+    "capacity_kw": 4.7
+  },
+  {
+    "id": "0dd993c4-9e69-47f9-a1ba-7c7e3e4cf815",
+    "name": "Prosumer 20",
+    "latitude": 26.866027957638806,
+    "longitude": 75.83691734158181,
+    "capacity_kw": 4.4
+  },
+  {
+    "id": "58fbd86d-b313-464e-b698-d25f4d61dbb4",
+    "name": "Prosumer 21",
+    "latitude": 26.902826645289025,
+    "longitude": 75.8265896560063,
+    "capacity_kw": 4.6
+  },
+  {
+    "id": "a36931a2-5319-42ba-9811-b42ab9288586",
+    "name": "Prosumer 22",
+    "latitude": 26.940773590079967,
+    "longitude": 75.71482908293554,
+    "capacity_kw": 8.3
+  },
+  {
+    "id": "b65acb08-31c7-431c-b441-8a207df3c302",
+    "name": "Prosumer 23",
+    "latitude": 26.874074831931363,
+    "longitude": 75.73625973784837,
+    "capacity_kw": 12.7
+  },
+  {
+    "id": "ccd060ee-660f-4f2a-a177-8360d4855b6f",
+    "name": "Prosumer 24",
+    "latitude": 26.85579915746585,
+    "longitude": 75.77365940030867,
+    "capacity_kw": 12.6
+  },
+  {
+    "id": "0a80b362-b941-444e-99c6-e3939c1a028d",
+    "name": "Prosumer 25",
+    "latitude": 26.950879288340182,
+    "longitude": 75.80160820346059,
+    "capacity_kw": 9.3
+  },
+  {
+    "id": "b1cbbfb7-349a-4463-8975-5586b1eae1bd",
+    "name": "Prosumer 26",
+    "latitude": 26.881431089384343,
+    "longitude": 75.72659261311932,
+    "capacity_kw": 6.8
+  },
+  {
+    "id": "9fed4b90-1a5b-490d-ad1b-7415486cdf8f",
+    "name": "Prosumer 27",
+    "latitude": 26.96904466215604,
+    "longitude": 75.8437128676197,
+    "capacity_kw": 4.9
+  },
+  {
+    "id": "9179a445-9080-40d1-afca-b473e9cee8b7",
+    "name": "Prosumer 28",
+    "latitude": 26.963151534610663,
+    "longitude": 75.7963617786996,
+    "capacity_kw": 3
+  },
+  {
+    "id": "6eb5aa7d-e27a-4beb-b5a7-d65ef9d97a17",
+    "name": "Prosumer 29",
+    "latitude": 26.939275320516497,
+    "longitude": 75.8641654280351,
+    "capacity_kw": 14.4
+  },
+  {
+    "id": "9061fa6b-48d0-4967-93a7-2e5e47a8282c",
+    "name": "Prosumer 30",
+    "latitude": 26.989011997660754,
+    "longitude": 75.79939407154826,
+    "capacity_kw": 9.1
+  },
+  {
+    "id": "cc448bdd-9ef0-4ad7-8960-5de807c173ed",
+    "name": "Prosumer 31",
+    "latitude": 26.976609706047157,
+    "longitude": 75.78200566320207,
+    "capacity_kw": 3.3
+  },
+  {
+    "id": "444baa26-bb0a-4a87-9bf0-ccbb19d8878a",
+    "name": "Prosumer 32",
+    "latitude": 26.85181605077121,
+    "longitude": 75.84264312062172,
+    "capacity_kw": 4.2
+  },
+  {
+    "id": "4a80a74b-ec7a-4cb6-b919-3b919c91f406",
+    "name": "Prosumer 33",
+    "latitude": 26.85066014433221,
+    "longitude": 75.7982770950355,
+    "capacity_kw": 3.2
+  },
+  {
+    "id": "df82ed82-726c-4540-b528-fd4174436507",
+    "name": "Prosumer 34",
+    "latitude": 26.87467714923049,
+    "longitude": 75.80164665018393,
+    "capacity_kw": 10.9
+  },
+  {
+    "id": "d52627f1-f35b-48c5-b1e7-fb0a372ddd97",
+    "name": "Prosumer 35",
+    "latitude": 26.912072576502123,
+    "longitude": 75.84095243583636,
+    "capacity_kw": 3.8
+  },
+  {
+    "id": "9da4d1e9-68e6-4fee-bb74-ddfb961198c6",
+    "name": "Prosumer 36",
+    "latitude": 26.909941577534482,
+    "longitude": 75.79225547494794,
+    "capacity_kw": 9.2
+  },
+  {
+    "id": "9c72cc39-b39d-4f41-a395-900995df878d",
+    "name": "Prosumer 37",
+    "latitude": 26.866702414534814,
+    "longitude": 75.7214375346985,
+    "capacity_kw": 10.5
+  },
+  {
+    "id": "a838aeca-c9f3-4db4-8be6-cbc29558c97f",
+    "name": "Prosumer 38",
+    "latitude": 26.87649379545118,
+    "longitude": 75.82604612852977,
+    "capacity_kw": 13.8
+  },
+  {
+    "id": "257b560f-43fd-4673-917d-8808b3e70da0",
+    "name": "Prosumer 39",
+    "latitude": 26.913712068490156,
+    "longitude": 75.76211631949846,
+    "capacity_kw": 7.8
+  },
+  {
+    "id": "807470f6-dca9-4fe7-9006-0808d75dd23a",
+    "name": "Prosumer 40",
+    "latitude": 26.891423109009086,
+    "longitude": 75.82562451434333,
+    "capacity_kw": 13.5
+  },
+  {
+    "id": "e6ea96c9-2aa3-4f70-823f-fd631039f63c",
+    "name": "Prosumer 41",
+    "latitude": 26.96889071092076,
+    "longitude": 75.81093967324288,
+    "capacity_kw": 3.9
+  },
+  {
+    "id": "1823ff6c-1614-4def-904f-0aafa5bc0d4c",
+    "name": "Prosumer 42",
+    "latitude": 26.90348373560184,
+    "longitude": 75.71768415219626,
+    "capacity_kw": 9.6
+  },
+  {
+    "id": "c305eb6f-18e5-4700-8ca5-296990598871",
+    "name": "Prosumer 43",
+    "latitude": 26.926886026616565,
+    "longitude": 75.79558960436613,
+    "capacity_kw": 4
+  },
+  {
+    "id": "0d362302-1405-4c7d-ba4a-34a7517fcdc0",
+    "name": "Prosumer 44",
+    "latitude": 26.88415296011797,
+    "longitude": 75.7855761415266,
+    "capacity_kw": 9.5
+  },
+  {
+    "id": "1edb7024-fd9a-4c23-b2f4-f6a54b8aaee9",
+    "name": "Prosumer 45",
+    "latitude": 26.832465583873656,
+    "longitude": 75.72903594940199,
+    "capacity_kw": 3.3
+  },
+  {
+    "id": "665b93ff-596d-4a85-9305-4689703bf150",
+    "name": "Prosumer 46",
+    "latitude": 26.85466263971611,
+    "longitude": 75.83268938350257,
+    "capacity_kw": 4.2
+  },
+  {
+    "id": "576e4dce-2ec4-42ab-b459-e7e2bdab72af",
+    "name": "Prosumer 47",
+    "latitude": 26.96594176540979,
+    "longitude": 75.72146275484415,
+    "capacity_kw": 6.7
+  },
+  {
+    "id": "615d574f-c1a1-45da-90d4-e77b861bea31",
+    "name": "Prosumer 48",
+    "latitude": 26.88910485457111,
+    "longitude": 75.83700345545392,
+    "capacity_kw": 8
+  },
+  {
+    "id": "0a6d53c7-9543-4dab-b7b2-7fd533ded4bc",
+    "name": "Prosumer 49",
+    "latitude": 26.952932088088957,
+    "longitude": 75.83375632944524,
+    "capacity_kw": 7.4
+  },
+  {
+    "id": "d4151a11-4c34-45f1-ad34-258c50a08b73",
+    "name": "Prosumer 50",
+    "latitude": 26.83630924973714,
+    "longitude": 75.72078175366113,
+    "capacity_kw": 6.1
+  }
+]

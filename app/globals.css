@@ -32,17 +32,20 @@
   }
 }
 
-/* Mapbox overrides for dark theme */
-.mapboxgl-ctrl-group button {
+/* Leaflet overrides for dark theme */
+.leaflet-control {
+  background: hsl(var(--card)) !important;
+}
+.leaflet-control-attribution {
   background: hsl(var(--card)) !important;
   color: hsl(var(--card-foreground)) !important;
 }
-.mapboxgl-ctrl-attrib {
-  background: hsl(var(--card)) !important;
-}
-.mapboxgl-popup-content {
+.leaflet-popup-content-wrapper {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
   color: hsl(var(--card-foreground));
+}
+.leaflet-popup-tip {
+  background: hsl(var(--card));
 }

@@ -24,9 +24,9 @@ export default function MapPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-4 flex-1 flex flex-col gap-4">
+      <main className="container mx-auto px-4 py-4 flex-1 flex flex-col gap-4 min-h-screen">
         <MapFiltersBar filters={filters} onFiltersChange={setFilters} />
-        <div className="flex-1 min-h-[500px]">
+        <div className="flex-1 min-h-[500px] w-full">
           <DiscoveryMap
             chargers={chargers}
             selectedChargerId={selectedChargerId}
