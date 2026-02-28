@@ -150,7 +150,7 @@ html {
 
   /* ── Tooltip ── */
   .tooltip {
-    @apply relative group;
+    @apply relative;
   }
 
   .tooltip-content {
@@ -179,4 +179,19 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(22, 163, 74, 0.4);
+}
+
+/* Slow spin animation for solar icon */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
 }
