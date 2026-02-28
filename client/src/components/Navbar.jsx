@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { LogOut, Wallet, Menu, X, Zap, LayoutDashboard, ShoppingBag, List, ArrowLeftRight, Shield, User } from 'lucide-react'
+import { LogOut, Wallet, Menu, X, Zap, LayoutDashboard, ShoppingBag, List, ArrowLeftRight, Shield, User, MapPin } from 'lucide-react'
 import { useAuth } from '../hooks/useContext'
 
 export default function Navbar() {
@@ -208,17 +208,20 @@ function getNavLinks(role) {
       { path: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
       { path: '/my-listings', label: 'My Listings', icon: List },
       { path: '/my-trades', label: 'My Trades', icon: ArrowLeftRight },
+      { path: '/map', label: 'Map', icon: MapPin },
     ]
   } else if (role === 'consumer') {
     return [
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
       { path: '/my-trades', label: 'My Trades', icon: ArrowLeftRight },
+      { path: '/map', label: 'Map', icon: MapPin },
     ]
   } else if (role === 'admin') {
     return [
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/admin/disputes', label: 'Disputes', icon: Shield },
+      { path: '/map', label: 'Map', icon: MapPin },
     ]
   }
   return []

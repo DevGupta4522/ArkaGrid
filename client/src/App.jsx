@@ -14,6 +14,7 @@ import Register from './pages/Register'
 // Pages - Protected
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
+import EnergyMap from './pages/EnergyMap'
 import Marketplace from './pages/Marketplace'
 import MyListings from './pages/MyListings'
 import MyTrades from './pages/MyTrades'
@@ -91,6 +92,16 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <TradeDetail />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Energy Map */}
+                <Route
+                  path="/map"
+                  element={
+                    <ProtectedRoute>
+                      <EnergyMap />
                     </ProtectedRoute>
                   }
                 />
