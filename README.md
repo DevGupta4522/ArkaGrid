@@ -1,63 +1,143 @@
-# Arka Grid
+# ⚡ ArkaGrid — P2P Neighbourhood Energy Trading Platform
 
-Hardware-agnostic **P2P energy trading** and **EV charging** platform with an AI Autopilot layer.
+ArkaGrid lets rooftop solar panel owners (Prosumers) sell surplus electricity directly to neighbours (Consumers) at a price lower than the government DISCOM grid rate — with **escrow-based payment protection**.
 
-## Stack
+## 🏗️ Tech Stack
 
-- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS, Shadcn/UI, Lucide Icons
-- **Backend/DB:** Supabase (Postgres, Auth, Edge Functions, Real-time)
-- **Maps:** Mapbox GL JS
-- **State:** TanStack Query (React Query)
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 + Vite + Tailwind CSS |
+| Backend | Node.js + Express |
+| Database | PostgreSQL (via `pg` library) |
+| Auth | JWT access tokens + httpOnly refresh token cookies |
 
-## Setup
+## 📁 Project Structure
 
+```
+/client              → React frontend (Vite)
+  /src/api           → API client (axios with interceptors)
+  /src/components    → Reusable UI components
+  /src/context       → Auth + Toast context providers
+  /src/hooks         → Custom hooks (useAuth, useToast)
+  /src/pages         → Route pages
+/server              → Express backend
+  /controllers       → Route handlers
+  /routes            → Express route definitions
+  /middleware        → Auth + error handler middleware
+  /db                → Schema, seed, connection
+  /jobs              → Background jobs (escrow timeout)
+/shared              → Shared constants (roles, statuses)
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 14+
+- npm
+
+### 1. Clone & Install
 ```bash
-npm install
+git clone <repo-url>
+cd ArkaGrid
+npm run install:all
+```
+
+### 2. Set Up Environment
+```bash
 cp .env.example .env.local
-# Edit .env.local with your NEXT_PUBLIC_SUPABASE_* and NEXT_PUBLIC_MAPBOX_TOKEN
+# Edit .env.local with your PostgreSQL credentials
+```
+
+### 3. Set Up Database
+```bash
+# Create the database first
+createdb arkagrid
+
+# Run schema + seed data
+cd server && npm run db:setup
+```
+
+### 4. Run Development Server
+```bash
+# From root directory — runs both client & server
 npm run dev
 ```
 
-## Mock data (Jaipur)
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:5000/api
 
-Generate 50 solar-prosumers and chargers in Jaipur:
+### 5. Test Accounts
 
-```bash
-npm run mock:seed
-```
+| Role | Email | Password |
+|------|-------|----------|
+| Prosumer | prosumer1@test.com | Test@123 |
+| Prosumer | prosumer2@test.com | Test@123 |
+| Consumer | consumer1@test.com | Test@123 |
+| Consumer | consumer2@test.com | Test@123 |
+| Admin | admin@test.com | Admin@123 |
 
-This writes `public/mock-chargers.json` and `public/mock-prosumers.json`. The Discovery Map loads chargers from this file when localStorage is empty.
+## 📡 API Endpoints
 
-## Features
+### Auth
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/refresh` | Refresh access token |
+| POST | `/api/auth/logout` | Logout |
+| GET | `/api/auth/me` | Get current user |
 
-- **Discovery Engine:** Interactive map with filters (Connector Type, Speed, Availability)
-- **Smart Wallet:** In-app balance, Earned vs Spent, transaction history (simulated)
-- **Host Dashboard:** Occupancy rate and revenue for energy/charger hosts
-- **QR:** Logic for scanning Charger ID to start a session (`lib/qr/scan-session.ts`)
-- **Autopilot Agent:** Background logic to trade based on battery level and grid price
-- **Grid Shield:** Simulated local grid health score; pauses trades when stressed
-- **Savings Predictor:** Arka vs JVVNL price comparison and saved amount
+### Listings
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/listings` | List active listings |
+| GET | `/api/listings/my` | Prosumer's own listings |
+| GET | `/api/listings/:id` | Single listing |
+| POST | `/api/listings` | Create listing (prosumer) |
+| PATCH | `/api/listings/:id` | Update listing (prosumer) |
+| DELETE | `/api/listings/:id` | Cancel listing (prosumer) |
 
-## Project structure
+### Trades
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/trades` | Create trade (consumer) |
+| GET | `/api/trades/my` | User's trades |
+| GET | `/api/trades/:id` | Trade detail |
+| POST | `/api/trades/:id/confirm-delivery` | Mark delivered (prosumer) |
+| POST | `/api/trades/:id/confirm-receipt` | Confirm receipt (consumer) |
+| POST | `/api/trades/:id/dispute` | Raise dispute (consumer) |
 
-```
-/app                 # App Router pages (home, control-room, map, wallet, host)
-/components          # UI: map, wallet, host, agents, control-room, ui
-/lib                 # agents (autopilot, grid-shield, savings-predictor), supabase, data, qr
-/hooks               # useChargers, useGridHealth
-/types               # Shared TS types
-/supabase/migrations # SQL schema (profiles, chargers, trades, agent_decisions, wallet_transactions)
-/scripts             # seed-mock-data.ts
-```
+### Wallet
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/wallet/balance` | Get balance |
+| POST | `/api/wallet/add-funds` | Add test funds |
+| GET | `/api/wallet/transactions` | Transaction history |
 
-## Database
+### Admin
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/admin/stats` | Platform statistics |
+| GET | `/api/admin/disputes` | Disputed trades |
+| POST | `/api/admin/trades/:id/resolve` | Resolve dispute |
 
-Apply the schema in `supabase/migrations/001_arka_grid_schema.sql` via the Supabase SQL Editor or CLI.
+## 🔒 Escrow Flow
 
-## Control Room
+1. Consumer places order → payment **locked in escrow**
+2. 60-minute countdown starts
+3. Prosumer marks energy as delivered
+4. Consumer confirms receipt
+5. Escrow releases payment to prosumer (minus 2.5% platform fee)
+6. If undelivered within deadline → **auto-refund to consumer**
 
-Dashboard with live energy flow diagram and **Agent Status** toggle (Manual vs Autopilot). Grid Shield and Savings Predictor cards are on the same page.
+## 🛠️ Available Scripts
 
----
-
-**Arka Grid** – Dark-mode, high-end tech aesthetic.
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Run client + server concurrently |
+| `npm run server:dev` | Run server only |
+| `npm run client:dev` | Run client only |
+| `npm run install:all` | Install all dependencies |
+| `cd server && npm run db:setup` | Set up database schema + seed |
+| `cd server && npm run db:reset` | Drop all tables |
