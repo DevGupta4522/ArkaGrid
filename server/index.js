@@ -17,12 +17,17 @@ import listingsRoutes from './routes/listings.js';
 import tradesRoutes from './routes/trades.js';
 import walletRoutes from './routes/wallet.js';
 import adminRoutes from './routes/admin.js';
+import notificationsRoutes from './routes/notifications.js';
 import { startEscrowTimeoutJob } from './jobs/escrowTimeout.js';
+import { securityHeaders, apiLimiter } from './middleware/security.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Security Middleware
+app.use(securityHeaders);
+
+// CORS Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
@@ -37,12 +42,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
+// API Routes (Rate Limited)
+app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingsRoutes);
 app.use('/api/trades', tradesRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

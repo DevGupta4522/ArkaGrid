@@ -1,301 +1,223 @@
 import React, { useState, useEffect } from 'react'
 import { listingsAPI } from '../api/listings'
-import { useToast } from '../hooks/useContext'
+import { useToast, useAuth } from '../hooks/useContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { EmptyState } from '../components/EmptyState'
 import StatusBadge from '../components/StatusBadge'
-import { Plus, Edit3, Trash2, Eye, List, X, Zap } from 'lucide-react'
+import AnimatedCounter from '../components/AnimatedCounter'
+import { Sun, Plus, Zap, Trash2, Edit3, Save, X, Calendar, DollarSign, TrendingUp, Clock, Package } from 'lucide-react'
 
 export default function MyListings() {
   const toast = useToast()
+  const { user } = useAuth()
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
-  const [editListing, setEditListing] = useState(null)
+  const [showNewForm, setShowNewForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [newForm, setNewForm] = useState({
+    unitsAvailable: '', pricePerUnit: '', availableUntil: '',
+    latitude: 26.9, longitude: 75.78
+  })
+  const [isCreating, setIsCreating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(null)
 
-  useEffect(() => { fetchListings() }, [])
+  useEffect(() => { fetchMyListings() }, [])
 
-  const fetchListings = async () => {
+  const fetchMyListings = async () => {
     try {
       setLoading(true)
       const response = await listingsAPI.getMyListings()
       setListings(response.data || [])
-    } catch (err) {
-      toast.error('Failed to fetch listings')
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { toast.error('Failed to load listings') }
+    finally { setLoading(false) }
+  }
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    const { unitsAvailable, pricePerUnit, availableUntil, latitude, longitude } = newForm
+    if (!unitsAvailable || !pricePerUnit || !availableUntil) { toast.error('Fill all fields'); return }
+    if (parseFloat(pricePerUnit) < 1 || parseFloat(pricePerUnit) > 15) { toast.error('Price must be ₹1-₹15/kWh'); return }
+
+    setIsCreating(true)
+    try {
+      const now = new Date().toISOString()
+      await listingsAPI.createListing(parseFloat(unitsAvailable), parseFloat(pricePerUnit), now, availableUntil, parseFloat(latitude), parseFloat(longitude))
+      toast.success('Listing created! ⚡')
+      setShowNewForm(false)
+      setNewForm({ unitsAvailable: '', pricePerUnit: '', availableUntil: '', latitude: 26.9, longitude: 75.78 })
+      await fetchMyListings()
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to create listing') }
+    finally { setIsCreating(false) }
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Cancel this listing?')) return
+    setIsDeleting(id)
     try {
       await listingsAPI.deleteListing(id)
-      toast.success('Listing cancelled')
-      await fetchListings()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to cancel listing')
-    }
+      toast.success('Listing removed')
+      await fetchMyListings()
+    } catch (err) { toast.error('Failed to remove listing') }
+    finally { setIsDeleting(null) }
   }
 
-  const activeCount = listings.filter(l => l.status === 'active').length
-  const totalUnits = listings.filter(l => l.status === 'active').reduce((s, l) => s + parseFloat(l.units_remaining || 0), 0)
+  const handleUpdate = async (id) => {
+    try {
+      await listingsAPI.updateListing(id, parseFloat(editForm.price_per_unit), editForm.available_until)
+      toast.success('Listing updated! ⚡')
+      setEditingId(null)
+      await fetchMyListings()
+    } catch (err) { toast.error('Failed to update listing') }
+  }
 
-  if (loading) return <LoadingSpinner message="Loading listings..." />
+  if (loading) return <LoadingSpinner message="Loading your listings..." />
+
+  const total = listings.reduce((sum, l) => sum + parseFloat(l.units_available || 0), 0)
+  const active = listings.filter(l => new Date(l.available_until) > new Date())
+  const potentialRev = listings.reduce((sum, l) => sum + parseFloat(l.units_remaining || 0) * parseFloat(l.price_per_unit || 0), 0)
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in pb-24 md:pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="page-title">☀️ My Listings</h1>
-          <p className="text-gray-500">{activeCount} active · {totalUnits.toFixed(1)} kWh available</p>
+          <p className="text-gray-500 text-lg">Manage your energy listings</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          <span className="flex items-center gap-2"><Plus size={18} /> New Listing</span>
+        <button onClick={() => setShowNewForm(!showNewForm)}
+          className={`btn-primary flex items-center gap-2 ${showNewForm ? 'opacity-50' : ''}`}>
+          <Plus size={16} /> Create Listing
         </button>
       </div>
 
-      {listings.length === 0 ? (
-        <EmptyState
-          title="No listings yet"
-          message="Create your first energy listing to start selling"
-          icon={<Zap className="text-gray-400" size={36} />}
-          action={
-            <button onClick={() => setShowCreate(true)} className="btn-primary mt-2">
-              <span className="flex items-center gap-2"><Plus size={16} /> Create Listing</span>
-            </button>
-          }
-        />
-      ) : (
-        <div className="space-y-4">
-          {listings.map((listing) => (
-            <ListingRow key={listing.id} listing={listing} onDelete={handleDelete} onEdit={setEditListing} />
-          ))}
+      {/* Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="card-glass">
+          <p className="text-xs text-gray-500">Total Listings</p>
+          <p className="text-2xl font-bold font-mono text-white"><AnimatedCounter value={listings.length} decimals={0} /></p>
         </div>
-      )}
-
-      {showCreate && (
-        <CreateListingModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => { setShowCreate(false); fetchListings() }}
-        />
-      )}
-
-      {editListing && (
-        <EditListingModal
-          listing={editListing}
-          onClose={() => setEditListing(null)}
-          onUpdated={() => { setEditListing(null); fetchListings() }}
-        />
-      )}
-    </div>
-  )
-}
-
-function ListingRow({ listing, onDelete, onEdit }) {
-  const soldPercentage = ((parseFloat(listing.units_available) - parseFloat(listing.units_remaining)) / parseFloat(listing.units_available) * 100)
-  const earnings = (parseFloat(listing.units_available) - parseFloat(listing.units_remaining)) * parseFloat(listing.price_per_unit)
-
-  return (
-    <div className="card-hover">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div>
-            <p className="text-xs text-gray-500 mb-1">Price</p>
-            <p className="text-lg font-bold text-green-600">₹{parseFloat(listing.price_per_unit).toFixed(2)}/kWh</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 mb-1">Available</p>
-            <p className="font-semibold">{parseFloat(listing.units_remaining).toFixed(1)}/{parseFloat(listing.units_available).toFixed(1)} kWh</p>
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-              <div className="bg-green-500 h-1.5 rounded-full transition-all" style={{ width: `${Math.min(soldPercentage, 100)}%` }} />
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 mb-1">Earnings</p>
-            <p className="font-semibold text-gray-900">₹{earnings.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 mb-1">Valid Until</p>
-            <p className="font-medium text-sm">{new Date(listing.available_until).toLocaleDateString()}</p>
-          </div>
-          <div className="flex items-center">
-            <StatusBadge status={listing.status} />
-          </div>
+        <div className="card-glass">
+          <p className="text-xs text-gray-500">Active Now</p>
+          <p className="text-2xl font-bold font-mono text-volt-green"><AnimatedCounter value={active.length} decimals={0} /></p>
         </div>
-
-        {listing.status === 'active' && (
-          <div className="flex items-center gap-2">
-            <button onClick={() => onEdit(listing)} className="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
-              <Edit3 size={16} />
-            </button>
-            <button onClick={() => onDelete(listing.id)} className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-              <Trash2 size={16} />
-            </button>
-          </div>
-        )}
+        <div className="card-glass">
+          <p className="text-xs text-gray-500">Energy Listed</p>
+          <p className="text-2xl font-bold font-mono text-white"><AnimatedCounter value={total} suffix=" kWh" decimals={1} /></p>
+        </div>
+        <div className="card-glass">
+          <p className="text-xs text-gray-500">Potential Revenue</p>
+          <p className="text-2xl font-bold font-mono text-volt-green"><AnimatedCounter value={potentialRev} prefix="₹" decimals={0} /></p>
+        </div>
       </div>
-    </div>
-  )
-}
 
-function CreateListingModal({ onClose, onCreated }) {
-  const toast = useToast()
-  const [form, setForm] = useState({
-    units_available: '', price_per_unit: '', available_from: '', available_until: '',
-    latitude: '28.7041', longitude: '77.1025'
-  })
-  const [loading, setLoading] = useState(false)
-
-  const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-
-  const estimatedEarnings = () => {
-    const u = parseFloat(form.units_available) || 0
-    const p = parseFloat(form.price_per_unit) || 0
-    const fee = u * p * 0.025
-    return (u * p - fee).toFixed(2)
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await listingsAPI.createListing(
-        parseFloat(form.units_available), parseFloat(form.price_per_unit),
-        form.available_from, form.available_until,
-        parseFloat(form.latitude), parseFloat(form.longitude)
-      )
-      toast.success('Listing created! 🎉')
-      onCreated()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create listing')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content max-w-lg">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold">Create Energy Listing</h2>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition-colors"><X size={20} className="text-gray-400" /></button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+      {/* Create form */}
+      {showNewForm && (
+        <div className="card mb-8 animate-slide-up border-volt-green/30">
+          <h3 className="text-lg font-bold text-white mb-6 font-heading">New Energy Listing</h3>
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="form-label">Units (kWh)</label>
-              <input type="number" name="units_available" value={form.units_available}
-                onChange={handleChange} placeholder="10" min="0.1" step="0.1" className="form-input" required />
+              <label className="form-label flex items-center gap-2"><Zap size={12} /> Energy Units (kWh)</label>
+              <input type="number" value={newForm.unitsAvailable} onChange={(e) => setNewForm(p => ({ ...p, unitsAvailable: e.target.value }))}
+                placeholder="e.g. 5.0" min="0.1" step="0.1" className="form-input" required />
             </div>
             <div>
-              <label className="form-label">Price (₹/kWh)</label>
-              <input type="number" name="price_per_unit" value={form.price_per_unit}
-                onChange={handleChange} placeholder="6.50" min="0.1" max="15" step="0.1" className="form-input" required />
+              <label className="form-label flex items-center gap-2"><DollarSign size={12} /> Price per kWh (₹)</label>
+              <input type="number" value={newForm.pricePerUnit} onChange={(e) => setNewForm(p => ({ ...p, pricePerUnit: e.target.value }))}
+                placeholder="e.g. 6.50" min="1" max="15" step="0.1" className="form-input" required />
+              <p className="text-xs text-gray-600 mt-1">DISCOM rate: ₹8/kWh • Suggested: ₹5-7</p>
             </div>
-          </div>
+            <div>
+              <label className="form-label flex items-center gap-2"><Calendar size={12} /> Available Until</label>
+              <input type="datetime-local" value={newForm.availableUntil} onChange={(e) => setNewForm(p => ({ ...p, availableUntil: e.target.value }))}
+                className="form-input" required />
+            </div>
+            <div className="flex items-end gap-3">
+              <button type="submit" disabled={isCreating} className="btn-primary flex-1 disabled:opacity-50">
+                {isCreating ? 'Creating...' : '⚡ List Energy'}
+              </button>
+              <button type="button" onClick={() => setShowNewForm(false)} className="btn-secondary px-4">
+                <X size={18} />
+              </button>
+            </div>
+          </form>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="form-label">Available From</label>
-              <input type="datetime-local" name="available_from" value={form.available_from}
-                onChange={handleChange} className="form-input" required />
-            </div>
-            <div>
-              <label className="form-label">Available Until</label>
-              <input type="datetime-local" name="available_until" value={form.available_until}
-                onChange={handleChange} className="form-input" required />
-            </div>
-          </div>
-
-          {/* Location */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="form-label">Latitude</label>
-              <input type="number" name="latitude" value={form.latitude}
-                onChange={handleChange} step="0.0001" className="form-input" required />
-            </div>
-            <div>
-              <label className="form-label">Longitude</label>
-              <input type="number" name="longitude" value={form.longitude}
-                onChange={handleChange} step="0.0001" className="form-input" required />
-            </div>
-          </div>
-
-          {/* Earnings Preview */}
-          {form.units_available && form.price_per_unit && (
-            <div className="p-3 bg-green-50 rounded-xl text-center ring-1 ring-green-200 animate-fade-in">
-              <p className="text-sm text-green-700">
-                Estimated earnings: <span className="font-bold text-lg">₹{estimatedEarnings()}</span>
-                <span className="text-xs block mt-0.5 text-green-600">(after 2.5% platform fee)</span>
+          {newForm.unitsAvailable && newForm.pricePerUnit && (
+            <div className="mt-5 p-4 bg-volt-green/5 rounded-xl border border-volt-green/20 animate-fade-in">
+              <div className="flex items-center gap-2 text-sm text-volt-green font-bold mb-1">
+                <TrendingUp size={14} /> Earnings Preview
+              </div>
+              <p className="text-xs text-gray-400">
+                If sold: <span className="mono-value text-volt-green font-bold text-base">₹{(parseFloat(newForm.unitsAvailable || 0) * parseFloat(newForm.pricePerUnit || 0) * 0.975).toFixed(2)}</span>
+                <span className="text-gray-600"> (after 2.5% platform fee)</span>
               </p>
             </div>
           )}
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 btn-secondary" disabled={loading}>Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 btn-primary disabled:opacity-50">
-              {loading ? 'Creating...' : 'Create Listing'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function EditListingModal({ listing, onClose, onUpdated }) {
-  const toast = useToast()
-  const [form, setForm] = useState({
-    price_per_unit: listing.price_per_unit || '',
-    available_until: listing.available_until ? new Date(listing.available_until).toISOString().slice(0, 16) : ''
-  })
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await listingsAPI.updateListing(listing.id, parseFloat(form.price_per_unit), form.available_until)
-      toast.success('Listing updated')
-      onUpdated()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update listing')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold">Edit Listing</h2>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition-colors"><X size={20} className="text-gray-400" /></button>
         </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="form-label">Price (₹/kWh)</label>
-            <input type="number" value={form.price_per_unit}
-              onChange={(e) => setForm((p) => ({ ...p, price_per_unit: e.target.value }))}
-              min="0.1" max="15" step="0.1" className="form-input" />
-          </div>
-          <div>
-            <label className="form-label">Available Until</label>
-            <input type="datetime-local" value={form.available_until}
-              onChange={(e) => setForm((p) => ({ ...p, available_until: e.target.value }))}
-              className="form-input" />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 btn-secondary">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 btn-primary disabled:opacity-50">
-              {loading ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
+      {/* Listings */}
+      {listings.length === 0 ? (
+        <EmptyState title="No listings yet" message="Create your first listing to start selling energy"
+          icon={<Sun className="text-gray-600" size={36} />}
+          action={<button onClick={() => setShowNewForm(true)} className="btn-primary text-sm">Create Listing</button>} />
+      ) : (
+        <div className="space-y-4">
+          {listings.map((listing, i) => {
+            const remaining = parseFloat(listing.units_remaining || 0)
+            const total = parseFloat(listing.units_available || 0)
+            const isEditing = editingId === listing.id
+            const isExpired = new Date(listing.available_until) < new Date()
+            const soldPct = total > 0 ? ((total - remaining) / total * 100) : 0
+
+            return (
+              <div key={listing.id} className={`card animate-fade-in`} style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Price</p>
+                      <p className="text-xl font-bold font-mono text-volt-green">₹{parseFloat(listing.price_per_unit).toFixed(1)}<span className="text-xs text-gray-500 font-sans">/kWh</span></p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Available</p>
+                      <p className="font-bold font-mono text-white">{remaining.toFixed(1)} <span className="text-gray-500 text-xs font-sans">/ {total.toFixed(1)} kWh</span></p>
+                      <div className="w-full bg-volt-border rounded-full h-1.5 mt-1">
+                        <div className="bg-volt-green h-1.5 rounded-full" style={{ width: `${Math.min(100 - soldPct, 100)}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Valid Until</p>
+                      <p className="text-sm font-medium text-gray-300">{new Date(listing.available_until).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Status</p>
+                      <StatusBadge status={isExpired ? 'expired' : remaining <= 0 ? 'sold' : 'active'} />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 flex-shrink-0">
+                    {!isEditing ? (
+                      <>
+                        <button onClick={() => { setEditingId(listing.id); setEditForm({ price_per_unit: listing.price_per_unit, available_until: listing.available_until }) }}
+                          className="btn-ghost text-xs"><Edit3 size={14} /></button>
+                        <button onClick={() => handleDelete(listing.id)} disabled={isDeleting === listing.id}
+                          className="btn-ghost text-xs text-danger-400 hover:text-danger-400 hover:bg-danger-400/5 disabled:opacity-50">
+                          {isDeleting === listing.id ? '...' : <Trash2 size={14} />}
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex gap-2 items-center">
+                        <input type="number" value={editForm.price_per_unit} onChange={(e) => setEditForm(p => ({ ...p, price_per_unit: e.target.value }))}
+                          className="form-input w-24 text-sm" step="0.1" />
+                        <button onClick={() => handleUpdate(listing.id)} className="btn-primary text-xs px-3"><Save size={14} /></button>
+                        <button onClick={() => setEditingId(null)} className="btn-ghost text-xs"><X size={14} /></button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

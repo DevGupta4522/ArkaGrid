@@ -50,24 +50,37 @@ export const addFunds = async (req, res, next) => {
       });
     }
 
-    const result = await pool.query(
-      'UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2 RETURNING wallet_balance',
-      [amount, userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-        code: 'NOT_FOUND'
-      });
+    const client = await pool.connect();
+    let wallet_balance;
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE', [userId]);
+      const result = await client.query(
+        'UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2 RETURNING wallet_balance',
+        [amount, userId]
+      );
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK');
+        client.release();
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+          code: 'NOT_FOUND'
+        });
+      }
+      wallet_balance = result.rows[0].wallet_balance;
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
     res.json({
       success: true,
       message: `₹${amount} added to wallet successfully`,
       data: {
-        wallet_balance: result.rows[0].wallet_balance,
+        wallet_balance: wallet_balance,
         amount_added: amount
       }
     });
@@ -139,7 +152,7 @@ export const getTransactions = async (req, res, next) => {
       .reduce((sum, t) => sum + parseFloat(t.amount_earned || 0), 0);
 
     const totalUnitsTraded = (buyerTrades.reduce((sum, t) => sum + parseFloat(t.units_delivered || 0), 0) +
-                             sellerTrades.reduce((sum, t) => sum + parseFloat(t.units_delivered || 0), 0)) / 2;
+      sellerTrades.reduce((sum, t) => sum + parseFloat(t.units_delivered || 0), 0)) / 2;
 
     res.json({
       success: true,

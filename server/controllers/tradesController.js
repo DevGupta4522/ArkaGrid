@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../db/connection.js';
 import { PLATFORM_CONFIG } from '../../shared/constants.js';
+import { createNotification } from './notificationsController.js';
 
 const DELIVERY_TIMEOUT_MS = PLATFORM_CONFIG.DELIVERY_TIMEOUT_MINUTES * 60 * 1000;
 const DELIVERY_THRESHOLD = PLATFORM_CONFIG.DELIVERY_CONFIRMATION_THRESHOLD;
@@ -52,36 +53,35 @@ export const createTrade = async (req, res, next) => {
       });
     }
 
-    // Check consumer has sufficient balance
-    const consumerResult = await pool.query(
-      'SELECT wallet_balance FROM users WHERE id = $1',
-      [consumerId]
-    );
-
-    if (consumerResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Consumer not found',
-        code: 'NOT_FOUND'
-      });
-    }
-
     const total_amount = units_requested * listing.price_per_unit;
     const platform_fee = total_amount * (PLATFORM_FEE_PERCENT / 100);
-    const consumer_balance = consumerResult.rows[0].wallet_balance;
-
-    if (consumer_balance < total_amount) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient wallet balance. Need ₹${total_amount}, have ₹${consumer_balance}`,
-        code: 'INSUFFICIENT_BALANCE'
-      });
-    }
 
     // Start transaction
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+
+      // Check consumer has sufficient balance FOR UPDATE
+      const consumerResult = await client.query(
+        'SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE',
+        [consumerId]
+      );
+
+      if (consumerResult.rows.length === 0) {
+        throw new Error('Consumer not found');
+      }
+
+
+      const consumer_balance = consumerResult.rows[0].wallet_balance;
+
+      if (consumer_balance < total_amount) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient wallet balance. Need ₹${total_amount}, have ₹${consumer_balance}`,
+          code: 'INSUFFICIENT_BALANCE'
+        });
+      }
 
       // Deduct from consumer wallet
       await client.query(
@@ -118,6 +118,16 @@ export const createTrade = async (req, res, next) => {
       await client.query('COMMIT');
 
       const trade = tradeResult.rows[0];
+
+      // Notify Prosumer
+      await createNotification(
+        null, // pool
+        trade.prosumer_id,
+        'trade_created',
+        'New Energy Request',
+        `A consumer has requested ${units_requested} kWh of energy. Please deliver by ${new Date(delivery_deadline).toLocaleTimeString()}`,
+        trade.id
+      );
 
       res.status(201).json({
         success: true,
@@ -270,6 +280,16 @@ export const confirmDelivery = async (req, res, next) => {
 
       await client.query('COMMIT');
 
+      // Notify consumer
+      await createNotification(
+        null,
+        trade.consumer_id,
+        'trade_delivering',
+        'Energy Delivery Started',
+        'The seller has confirmed energy delivery. Please verify receipt.',
+        trade.id
+      );
+
       res.json({
         success: true,
         message: 'Energy delivery marked. Waiting for consumer confirmation...',
@@ -353,6 +373,7 @@ export const confirmReceipt = async (req, res, next) => {
       }
 
       // Release funds to prosumer
+      await client.query('SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE', [trade.prosumer_id]);
       await client.query(
         'UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2',
         [settlement_amount, trade.prosumer_id]
@@ -360,6 +381,7 @@ export const confirmReceipt = async (req, res, next) => {
 
       // Refund to consumer if partial
       if (refund_amount > 0) {
+        await client.query('SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE', [consumerId]);
         await client.query(
           'UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2',
           [refund_amount, consumerId]
@@ -376,6 +398,16 @@ export const confirmReceipt = async (req, res, next) => {
       );
 
       await client.query('COMMIT');
+
+      // Notify prosumer
+      await createNotification(
+        null,
+        trade.prosumer_id,
+        'trade_completed',
+        'Trade Completed',
+        `The buyer has confirmed receipt of ${delivered.toFixed(2)} kWh. Escrow ${escrow_status}.`,
+        trade.id
+      );
 
       const resultTrade = updateResult.rows[0];
 
@@ -439,6 +471,16 @@ export const raisDispute = async (req, res, next) => {
     const updateResult = await pool.query(
       'UPDATE trades SET trade_status = $1 WHERE id = $2 RETURNING *',
       ['disputed', id]
+    );
+
+    // Notify prosumer
+    await createNotification(
+      null,
+      trade.prosumer_id,
+      'trade_disputed',
+      'Trade Disputed',
+      'The buyer has raised a dispute on this trade. An admin will review it shortly.',
+      trade.id
     );
 
     // Note: In production, send notification to admin
@@ -516,6 +558,7 @@ export const resolveDispute = async (req, res, next) => {
 
       // Execute settlement
       if (settlement_amount > 0) {
+        await client.query('SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE', [trade.prosumer_id]);
         await client.query(
           'UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2',
           [settlement_amount, trade.prosumer_id]
@@ -523,6 +566,7 @@ export const resolveDispute = async (req, res, next) => {
       }
 
       if (refund_amount > 0) {
+        await client.query('SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE', [trade.consumer_id]);
         await client.query(
           'UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2',
           [refund_amount, trade.consumer_id]
@@ -540,6 +584,10 @@ export const resolveDispute = async (req, res, next) => {
       );
 
       await client.query('COMMIT');
+
+      // Notify both parties
+      await createNotification(null, trade.prosumer_id, 'trade_resolved', 'Dispute Resolved', `Admin has resolved the dispute. Resolution: ${resolution}`, trade.id);
+      await createNotification(null, trade.consumer_id, 'trade_resolved', 'Dispute Resolved', `Admin has resolved the dispute. Resolution: ${resolution}`, trade.id);
 
       res.json({
         success: true,

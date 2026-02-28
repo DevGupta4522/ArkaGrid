@@ -111,3 +111,18 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
+
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id),
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  type VARCHAR(50) NOT NULL CHECK (type IN ('trade_created', 'trade_delivering', 'trade_completed', 'trade_failed', 'trade_disputed', 'trade_resolved', 'system', 'wallet')),
+  is_read BOOLEAN DEFAULT FALSE,
+  related_id UUID, -- Optional foreign key to related entity (like trade_id)
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);

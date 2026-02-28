@@ -5,7 +5,7 @@ import { useToast, useAuth } from '../hooks/useContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import CountdownTimer from '../components/CountdownTimer'
-import { ArrowLeft, Zap, Clock, DollarSign, Users } from 'lucide-react'
+import { ArrowLeft, Zap, Clock, DollarSign, Users, CheckCircle } from 'lucide-react'
 
 export default function TradeDetail() {
   const { id } = useParams()
@@ -21,11 +21,8 @@ export default function TradeDetail() {
       setLoading(true)
       const response = await tradesAPI.getTradeById(id)
       setTrade(response.data)
-    } catch (err) {
-      toast.error('Failed to load trade details')
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { toast.error('Failed to load trade details') }
+    finally { setLoading(false) }
   }
 
   if (loading) return <LoadingSpinner message="Loading trade..." />
@@ -34,15 +31,15 @@ export default function TradeDetail() {
   const isActive = ['delivering', 'completing'].includes(trade.trade_status)
 
   return (
-    <div className="page-container animate-fade-in">
-      <Link to="/my-trades" className="inline-flex items-center gap-1.5 text-green-600 font-medium text-sm mb-6 hover:text-green-700">
+    <div className="page-container animate-fade-in pb-24 md:pb-8">
+      <Link to="/my-trades" className="inline-flex items-center gap-1.5 text-volt-green font-medium text-sm mb-6 hover:text-volt-green/80 transition-colors">
         <ArrowLeft size={16} /> Back to My Trades
       </Link>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="page-title">Trade Details</h1>
-          <p className="text-gray-400 text-sm font-mono">#{trade.id}</p>
+          <p className="text-gray-600 text-sm font-mono">#{trade.id}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <StatusBadge status={trade.trade_status} />
@@ -52,11 +49,11 @@ export default function TradeDetail() {
 
       {/* Countdown */}
       {isActive && (
-        <div className="card mb-6 bg-amber-50 ring-1 ring-amber-200">
+        <div className="card mb-6 bg-accent-500/5 border border-accent-500/20">
           <div className="flex items-center gap-3">
-            <Clock size={20} className="text-amber-600" />
+            <Clock size={20} className="text-accent-400" />
             <div>
-              <p className="text-sm font-semibold text-amber-800">Delivery Deadline</p>
+              <p className="text-sm font-semibold text-accent-400">Delivery Deadline</p>
               <CountdownTimer deadline={trade.delivery_deadline} />
             </div>
           </div>
@@ -66,8 +63,8 @@ export default function TradeDetail() {
       {/* Trade Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="card">
-          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Zap size={18} className="text-green-600" /> Energy Details
+          <h3 className="font-bold text-white mb-4 flex items-center gap-2 font-heading">
+            <Zap size={18} className="text-volt-green" /> Energy Details
           </h3>
           <div className="space-y-3 text-sm">
             <DetailRow label="Units Requested" value={`${parseFloat(trade.units_requested).toFixed(2)} kWh`} />
@@ -77,8 +74,8 @@ export default function TradeDetail() {
         </div>
 
         <div className="card">
-          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <DollarSign size={18} className="text-blue-600" /> Payment Details
+          <h3 className="font-bold text-white mb-4 flex items-center gap-2 font-heading">
+            <DollarSign size={18} className="text-vblue-400" /> Payment Details
           </h3>
           <div className="space-y-3 text-sm">
             <DetailRow label="Total Amount" value={`₹${parseFloat(trade.total_amount).toFixed(2)}`} />
@@ -90,31 +87,31 @@ export default function TradeDetail() {
 
       {/* Parties */}
       <div className="card mb-6">
-        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <Users size={18} className="text-purple-600" /> Parties
+        <h3 className="font-bold text-white mb-4 flex items-center gap-2 font-heading">
+          <Users size={18} className="text-purple-400" /> Parties
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-volt-dark/60 rounded-xl p-4 border border-volt-border">
             <p className="text-xs text-gray-500 mb-1">Prosumer (Seller)</p>
-            <p className="font-semibold text-gray-900">{trade.prosumer_name}</p>
+            <p className="font-semibold text-white">{trade.prosumer_name}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-volt-dark/60 rounded-xl p-4 border border-volt-border">
             <p className="text-xs text-gray-500 mb-1">Consumer (Buyer)</p>
-            <p className="font-semibold text-gray-900">{trade.consumer_name}</p>
+            <p className="font-semibold text-white">{trade.consumer_name}</p>
           </div>
         </div>
       </div>
 
       {/* Meter Readings */}
       {trade.meter_readings?.length > 0 && (
-        <div className="card">
-          <h3 className="font-bold text-gray-800 mb-4">Meter Readings</h3>
+        <div className="card mb-6">
+          <h3 className="font-bold text-white mb-4 font-heading">Meter Readings</h3>
           <div className="space-y-3">
             {trade.meter_readings.map((reading) => (
-              <div key={reading.id} className="flex items-center justify-between bg-gray-50 rounded-xl p-3 text-sm">
+              <div key={reading.id} className="flex items-center justify-between bg-volt-dark/60 rounded-xl p-3 text-sm border border-volt-border">
                 <div className="flex items-center gap-3">
                   <StatusBadge status={reading.reading_type === 'outgoing' ? 'delivering' : 'completed'} />
-                  <span className="font-medium">{parseFloat(reading.kwh_value).toFixed(3)} kWh</span>
+                  <span className="font-medium font-mono text-white">{parseFloat(reading.kwh_value).toFixed(3)} kWh</span>
                 </div>
                 <div className="text-right text-xs text-gray-500">
                   <p>{reading.source}</p>
@@ -127,9 +124,10 @@ export default function TradeDetail() {
       )}
 
       {/* Timeline */}
-      <div className="card mt-6">
-        <h3 className="font-bold text-gray-800 mb-4">Timeline</h3>
-        <div className="space-y-3 text-sm">
+      <div className="card">
+        <h3 className="font-bold text-white mb-4 font-heading">Timeline</h3>
+        <div className="space-y-4 text-sm relative">
+          <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-volt-border" />
           <TimelineRow label="Trade Created" time={trade.created_at} />
           <TimelineRow label="Escrow Locked" time={trade.escrow_locked_at} />
           {trade.delivery_confirmed_at && <TimelineRow label="Delivery Confirmed" time={trade.delivery_confirmed_at} />}
@@ -144,7 +142,7 @@ function DetailRow({ label, value, highlight }) {
   return (
     <div className="flex justify-between items-center">
       <span className="text-gray-500">{label}</span>
-      <span className={`font-semibold ${highlight ? 'text-green-600 text-lg' : 'text-gray-900'}`}>{value}</span>
+      <span className={`font-semibold font-mono ${highlight ? 'text-volt-green text-lg' : 'text-white'}`}>{value}</span>
     </div>
   )
 }
@@ -152,10 +150,12 @@ function DetailRow({ label, value, highlight }) {
 function TimelineRow({ label, time }) {
   if (!time) return null
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-      <span className="text-gray-700 font-medium">{label}</span>
-      <span className="text-gray-400 text-xs ml-auto">{new Date(time).toLocaleString()}</span>
+    <div className="flex items-center gap-3 relative pl-1">
+      <div className="w-3.5 h-3.5 rounded-full bg-volt-green flex items-center justify-center z-10 flex-shrink-0">
+        <CheckCircle size={10} className="text-volt-dark" />
+      </div>
+      <span className="text-gray-300 font-medium">{label}</span>
+      <span className="text-gray-600 text-xs ml-auto">{new Date(time).toLocaleString()}</span>
     </div>
   )
 }

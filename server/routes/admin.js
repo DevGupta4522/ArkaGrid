@@ -6,6 +6,7 @@ import {
     getDisputedTrades,
     resolveDispute,
 } from '../controllers/adminController.js';
+import { processEscrowTimeouts } from '../jobs/escrowTimeout.js';
 
 const router = express.Router();
 
@@ -37,5 +38,14 @@ router.use(authenticateToken, requireRole('admin'));
 router.get('/stats', getStats);
 router.get('/disputes', getDisputedTrades);
 router.post('/trades/:id/resolve', validateResolveDispute, resolveDispute);
+
+router.post('/test/trigger-timeout-job', async (req, res, next) => {
+    try {
+        await processEscrowTimeouts();
+        res.json({ success: true, message: 'Escrow timeout job triggered manually.' });
+    } catch (error) {
+        next(error);
+    }
+});
 
 export default router;

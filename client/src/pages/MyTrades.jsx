@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { tradesAPI } from '../api/trades'
-import { useToast } from '../hooks/useContext'
+import { useToast, useAuth } from '../hooks/useContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { EmptyState } from '../components/EmptyState'
 import StatusBadge from '../components/StatusBadge'
 import CountdownTimer from '../components/CountdownTimer'
-import { AlertCircle, ArrowLeftRight, CheckCircle, XCircle } from 'lucide-react'
+import RatingModal from '../components/RatingModal'
+import {
+  Clock, ArrowRight, CheckCircle, AlertTriangle, Star, ArrowLeftRight,
+  Zap, DollarSign, Shield, User
+} from 'lucide-react'
 
 export default function MyTrades() {
+  const { user } = useAuth()
   const toast = useToast()
   const [trades, setTrades] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('all')
+  const [activeTab, setActiveTab] = useState('active')
+  const [ratingTrade, setRatingTrade] = useState(null)
+  const [isRating, setIsRating] = useState(false)
   const [actionLoading, setActionLoading] = useState(null)
 
   useEffect(() => { fetchTrades() }, [])
@@ -21,203 +29,195 @@ export default function MyTrades() {
       setLoading(true)
       const response = await tradesAPI.getMyTrades()
       setTrades(response.data || [])
-    } catch (err) {
-      toast.error('Failed to fetch trades')
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { toast.error('Failed to load trades') }
+    finally { setLoading(false) }
   }
 
-  const handleAction = async (action, tradeId) => {
-    setActionLoading(tradeId)
+  const handleConfirmDelivery = async (tradeId) => {
+    setActionLoading(tradeId + '-deliver')
     try {
-      switch (action) {
-        case 'deliver':
-          await tradesAPI.confirmDelivery(tradeId)
-          toast.success('Delivery confirmed! Waiting for buyer confirmation.')
-          break
-        case 'receipt':
-          await tradesAPI.confirmReceipt(tradeId)
-          toast.success('Receipt confirmed! Trade complete.')
-          break
-        case 'dispute':
-          await tradesAPI.raisDispute(tradeId)
-          toast.warning('Dispute raised. Admin will review shortly.')
-          break
-      }
+      await tradesAPI.confirmDelivery(tradeId)
+      toast.success('Delivery confirmed ⚡')
       await fetchTrades()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Action failed')
-    } finally {
-      setActionLoading(null)
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to confirm delivery') }
+    finally { setActionLoading(null) }
   }
 
-  const tabs = [
-    { key: 'all', label: 'All' },
-    { key: 'active', label: 'Active' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'disputed', label: 'Disputed' },
-  ]
+  const handleConfirmReceipt = async (tradeId) => {
+    setActionLoading(tradeId + '-receipt')
+    try {
+      await tradesAPI.confirmReceipt(tradeId)
+      toast.success('Receipt confirmed! Payment released 🎉')
+      await fetchTrades()
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to confirm receipt') }
+    finally { setActionLoading(null) }
+  }
 
-  const filteredTrades = trades.filter((t) => {
-    if (activeTab === 'active') return ['pending', 'delivering', 'completing'].includes(t.trade_status)
-    if (activeTab === 'completed') return t.trade_status === 'completed'
-    if (activeTab === 'disputed') return t.trade_status === 'disputed'
-    return true
-  })
+  const handleDispute = async (tradeId) => {
+    setActionLoading(tradeId + '-dispute')
+    try {
+      await tradesAPI.raisDispute(tradeId)
+      toast.success('Dispute raised')
+      await fetchTrades()
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to raise dispute') }
+    finally { setActionLoading(null) }
+  }
+
+  const handleRateSubmit = async (tradeId, score, comment) => {
+    setIsRating(true)
+    try {
+      await tradesAPI.rateTrade(tradeId, score, comment)
+      toast.success('Thanks for rating! ⭐')
+      setRatingTrade(null)
+      await fetchTrades()
+    } catch (err) { toast.error('Failed to submit rating') }
+    finally { setIsRating(false) }
+  }
 
   if (loading) return <LoadingSpinner message="Loading trades..." />
 
+  const activeTrades = trades.filter(t => ['pending', 'delivering', 'completing'].includes(t.trade_status))
+  const completedTrades = trades.filter(t => t.trade_status === 'completed')
+  const disputedTrades = trades.filter(t => ['failed', 'disputed'].includes(t.trade_status))
+
+  const currentTrades = activeTab === 'active' ? activeTrades :
+    activeTab === 'completed' ? completedTrades : disputedTrades
+
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in pb-24 md:pb-8">
       <h1 className="page-title">🔄 My Trades</h1>
-      <p className="page-subtitle">{trades.length} total trade{trades.length !== 1 ? 's' : ''}</p>
+      <p className="text-gray-500 text-lg mb-6">Track and manage your energy transactions</p>
 
       {/* Tabs */}
       <div className="tab-container">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-button ${activeTab === tab.key ? 'tab-button-active' : ''}`}
-          >
+        {[
+          { key: 'active', label: 'Active', count: activeTrades.length, icon: Clock },
+          { key: 'completed', label: 'Completed', count: completedTrades.length, icon: CheckCircle },
+          { key: 'disputed', label: 'Disputed', count: disputedTrades.length, icon: AlertTriangle },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className={`tab-button ${activeTab === tab.key ? 'tab-button-active' : ''} flex items-center gap-2`}>
+            <tab.icon size={14} />
             {tab.label}
-            {tab.key !== 'all' && (
-              <span className="ml-1.5 text-xs opacity-60">
-                ({trades.filter((t) => {
-                  if (tab.key === 'active') return ['pending', 'delivering', 'completing'].includes(t.trade_status)
-                  if (tab.key === 'completed') return t.trade_status === 'completed'
-                  if (tab.key === 'disputed') return t.trade_status === 'disputed'
-                  return false
-                }).length})
-              </span>
-            )}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-volt-green/20 text-volt-green' : 'bg-volt-border text-gray-500'}`}>
+              {tab.count}
+            </span>
           </button>
         ))}
       </div>
 
-      {filteredTrades.length === 0 ? (
+      {/* Trade cards */}
+      {currentTrades.length === 0 ? (
         <EmptyState
-          title="No trades found"
-          message={`No ${activeTab === 'all' ? '' : activeTab + ' '}trades yet`}
-          icon={<ArrowLeftRight className="text-gray-400" size={36} />}
+          title={`No ${activeTab} trades`}
+          message={activeTab === 'active' ? 'Start trading from the marketplace!' : `You have no ${activeTab} trades yet`}
+          icon={<ArrowLeftRight className="text-gray-600" size={36} />}
+          action={activeTab === 'active' && <Link to="/marketplace" className="btn-primary text-sm">Go to Marketplace</Link>}
         />
       ) : (
         <div className="space-y-4">
-          {filteredTrades.map((trade) => (
-            <TradeCard
-              key={trade.id}
-              trade={trade}
-              onAction={handleAction}
-              isLoading={actionLoading === trade.id}
-            />
-          ))}
+          {currentTrades.map((trade, i) => {
+            const isBuyer = trade.consumer_id === user?.id
+            const partnerName = isBuyer ? trade.prosumer_name : trade.consumer_name
+            const isActive = ['delivering', 'completing'].includes(trade.trade_status)
+
+            return (
+              <div key={trade.id} className={`card animate-slide-up ${isActive ? 'border-accent-500/30' : ''}`}
+                style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                  {/* Trade info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-volt-green/20 to-volt-green/5 flex items-center justify-center text-volt-green text-sm font-bold border border-volt-green/20">
+                        {partnerName?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-white">{partnerName}</p>
+                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md ${isBuyer ? 'bg-vblue-400/10 text-vblue-400' : 'bg-accent-500/10 text-accent-400'}`}>
+                            {isBuyer ? 'Buying' : 'Selling'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 font-mono">#{trade.id?.slice(0, 8)}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Units</p>
+                        <p className="font-bold font-mono text-white">{parseFloat(trade.units_requested).toFixed(1)} <span className="text-xs text-gray-500 font-sans">kWh</span></p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Total</p>
+                        <p className="font-bold font-mono text-volt-green">₹{parseFloat(trade.total_amount).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Status</p>
+                        <StatusBadge status={trade.trade_status} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions column */}
+                  <div className="flex flex-col gap-2 min-w-[180px]">
+                    {isActive && trade.delivery_deadline && (
+                      <div className="mb-2">
+                        <CountdownTimer deadline={trade.delivery_deadline} />
+                      </div>
+                    )}
+
+                    {/* Prosumer: Confirm Delivery */}
+                    {!isBuyer && trade.trade_status === 'delivering' && (
+                      <button onClick={() => handleConfirmDelivery(trade.id)}
+                        disabled={actionLoading === trade.id + '-deliver'}
+                        className="btn-primary text-sm disabled:opacity-50">
+                        {actionLoading === trade.id + '-deliver' ? 'Confirming...' : '⚡ Confirm Delivery'}
+                      </button>
+                    )}
+
+                    {/* Consumer: Confirm Receipt */}
+                    {isBuyer && trade.trade_status === 'completing' && (
+                      <button onClick={() => handleConfirmReceipt(trade.id)}
+                        disabled={actionLoading === trade.id + '-receipt'}
+                        className="btn-primary text-sm disabled:opacity-50">
+                        {actionLoading === trade.id + '-receipt' ? 'Confirming...' : '✅ Confirm Receipt'}
+                      </button>
+                    )}
+
+                    {/* Dispute */}
+                    {(trade.trade_status === 'delivering' || trade.trade_status === 'completing') && (
+                      <button onClick={() => handleDispute(trade.id)}
+                        disabled={actionLoading === trade.id + '-dispute'}
+                        className="btn-ghost text-xs text-danger-400 disabled:opacity-50">
+                        <span className="flex items-center gap-1"><AlertTriangle size={12} /> Dispute</span>
+                      </button>
+                    )}
+
+                    {/* Completed: Rate + View */}
+                    {trade.trade_status === 'completed' && !trade.has_rated && (
+                      <button onClick={() => setRatingTrade({
+                        ...trade,
+                        other_party_name: partnerName
+                      })} className="btn-accent text-sm">
+                        <span className="flex items-center gap-1"><Star size={14} /> Rate Trade</span>
+                      </button>
+                    )}
+
+                    <Link to={`/trades/${trade.id}`} className="text-xs text-volt-green font-semibold hover:text-volt-green/80 flex items-center gap-1">
+                      View Details <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
-    </div>
-  )
-}
 
-function TradeCard({ trade, onAction, isLoading }) {
-  const isActive = ['delivering', 'completing'].includes(trade.trade_status)
-  const deadline = new Date(trade.delivery_deadline)
-  const isExpiring = isActive && deadline - new Date() < 10 * 60 * 1000 && deadline > new Date()
-
-  return (
-    <div className={`card transition-all ${isExpiring ? 'ring-2 ring-red-200 shadow-glow-amber' : ''}`}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h3 className="font-bold text-lg text-gray-900">{trade.other_party_name}</h3>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg font-mono">
-              {trade.my_role === 'seller' ? '📤 Selling' : '📥 Buying'}
-            </span>
-          </div>
-          <p className="text-xs text-gray-400 mt-0.5 font-mono">#{trade.id?.slice(0, 8)}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge status={trade.trade_status} />
-          <StatusBadge status={trade.escrow_status} label="Escrow" />
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="bg-gray-50 rounded-xl p-3">
-          <p className="text-xs text-gray-500 mb-0.5">Units</p>
-          <p className="font-bold text-gray-900">{parseFloat(trade.units_requested).toFixed(1)} kWh</p>
-        </div>
-        <div className="bg-gray-50 rounded-xl p-3">
-          <p className="text-xs text-gray-500 mb-0.5">Amount</p>
-          <p className="font-bold text-gray-900">₹{parseFloat(trade.total_amount).toFixed(2)}</p>
-        </div>
-        <div className="bg-gray-50 rounded-xl p-3">
-          <p className="text-xs text-gray-500 mb-0.5">Fee</p>
-          <p className="font-bold text-gray-900">₹{parseFloat(trade.platform_fee || 0).toFixed(2)}</p>
-        </div>
-        <div className="bg-gray-50 rounded-xl p-3">
-          <p className="text-xs text-gray-500 mb-0.5">Delivered</p>
-          <p className="font-bold text-gray-900">{parseFloat(trade.units_delivered || 0).toFixed(1)} kWh</p>
-        </div>
-      </div>
-
-      {/* Countdown */}
-      {isActive && (
-        <div className={`p-3 rounded-xl mb-4 flex items-center gap-3 ${isExpiring ? 'bg-red-50 ring-1 ring-red-200' : 'bg-amber-50 ring-1 ring-amber-200'
-          }`}>
-          <AlertCircle size={18} className={isExpiring ? 'text-red-500 animate-pulse' : 'text-amber-600'} />
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-gray-600 mb-0.5">Delivery Deadline</p>
-            <CountdownTimer deadline={trade.delivery_deadline} />
-          </div>
-        </div>
+      {ratingTrade && (
+        <RatingModal trade={ratingTrade} onClose={() => setRatingTrade(null)}
+          onSubmit={handleRateSubmit} isLoading={isRating} />
       )}
-
-      {/* Actions */}
-      <div className="flex flex-wrap gap-3">
-        {trade.trade_status === 'delivering' && trade.my_role === 'seller' && (
-          <button onClick={() => onAction('deliver', trade.id)} disabled={isLoading}
-            className="flex-1 btn-primary disabled:opacity-50">
-            {isLoading ? 'Processing...' : '✓ Mark as Delivered'}
-          </button>
-        )}
-
-        {trade.trade_status === 'completing' && trade.my_role === 'buyer' && (
-          <>
-            <button onClick={() => onAction('receipt', trade.id)} disabled={isLoading}
-              className="flex-1 btn-primary disabled:opacity-50">
-              <span className="flex items-center justify-center gap-2">
-                <CheckCircle size={16} /> Confirm Receipt
-              </span>
-            </button>
-            <button onClick={() => onAction('dispute', trade.id)} disabled={isLoading}
-              className="flex-1 btn-danger disabled:opacity-50">
-              <span className="flex items-center justify-center gap-2">
-                <XCircle size={16} /> Raise Dispute
-              </span>
-            </button>
-          </>
-        )}
-
-        {trade.trade_status === 'disputed' && (
-          <div className="flex-1 p-3 bg-orange-50 rounded-xl text-orange-700 text-sm font-semibold ring-1 ring-orange-200">
-            ⚖️ Dispute raised — Admin will review shortly
-          </div>
-        )}
-
-        {trade.trade_status === 'completed' && (
-          <div className="flex-1 p-3 bg-green-50 rounded-xl text-green-700 text-sm font-semibold ring-1 ring-green-200">
-            ✓ Trade completed successfully
-          </div>
-        )}
-
-        {trade.trade_status === 'failed' && (
-          <div className="flex-1 p-3 bg-red-50 rounded-xl text-red-700 text-sm font-semibold ring-1 ring-red-200">
-            ✗ Trade failed — Amount refunded
-          </div>
-        )}
-      </div>
     </div>
   )
 }

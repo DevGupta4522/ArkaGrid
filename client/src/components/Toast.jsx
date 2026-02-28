@@ -10,17 +10,17 @@ const icons = {
 }
 
 const styles = {
-  success: 'bg-green-50 border-green-200 text-green-800',
-  error: 'bg-red-50 border-red-200 text-red-800',
-  warning: 'bg-amber-50 border-amber-200 text-amber-800',
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
+  success: 'bg-volt-surface border-l-4 border-l-volt-green text-gray-200',
+  error: 'bg-volt-surface border-l-4 border-l-danger-400 text-gray-200',
+  warning: 'bg-volt-surface border-l-4 border-l-accent-500 text-gray-200',
+  info: 'bg-volt-surface border-l-4 border-l-vblue-400 text-gray-200',
 }
 
 const iconColors = {
-  success: 'text-green-500',
-  error: 'text-red-500',
-  warning: 'text-amber-500',
-  info: 'text-blue-500',
+  success: 'text-volt-green',
+  error: 'text-danger-400',
+  warning: 'text-accent-500',
+  info: 'text-vblue-400',
 }
 
 export default function Toast() {
@@ -29,7 +29,7 @@ export default function Toast() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed top-20 right-4 z-[100] space-y-3 max-w-sm w-full pointer-events-none">
+    <div className="fixed top-4 right-4 z-[100] space-y-3 max-w-sm w-full pointer-events-none">
       {toasts.map((toast) => {
         const Icon = icons[toast.type] || icons.info
         return (
@@ -37,7 +37,7 @@ export default function Toast() {
             key={toast.id}
             className={`
               pointer-events-auto animate-slide-in-right
-              flex items-start gap-3 px-4 py-3.5 rounded-xl border shadow-lg backdrop-blur-sm
+              flex items-start gap-3 px-4 py-3.5 rounded-xl border border-volt-border shadow-2xl backdrop-blur-xl
               ${styles[toast.type] || styles.info}
             `}
           >
@@ -45,7 +45,7 @@ export default function Toast() {
             <p className="text-sm font-medium flex-1">{toast.message}</p>
             <button
               onClick={() => hideToast(toast.id)}
-              className="flex-shrink-0 p-0.5 rounded-lg hover:bg-black/5 transition-colors"
+              className="flex-shrink-0 p-0.5 rounded-lg hover:bg-white/5 transition-colors text-gray-500"
             >
               <X size={14} />
             </button>

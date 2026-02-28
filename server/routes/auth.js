@@ -2,6 +2,7 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.js';
 import { register, login, refresh, logout, getMe, googleLogin } from '../controllers/authController.js';
+import { authLimiter } from '../middleware/security.js';
 
 const router = express.Router();
 
@@ -43,9 +44,9 @@ const validateLogin = [
   }
 ];
 
-router.post('/register', validateRegister, register);
-router.post('/login', validateLogin, login);
-router.post('/google', googleLogin);
+router.post('/register', authLimiter, validateRegister, register);
+router.post('/login', authLimiter, validateLogin, login);
+router.post('/google', authLimiter, googleLogin);
 router.post('/refresh', refresh);
 router.post('/logout', authenticateToken, logout);
 router.get('/me', authenticateToken, getMe);

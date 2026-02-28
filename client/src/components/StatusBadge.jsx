@@ -2,24 +2,24 @@ import React from 'react'
 
 const statusConfig = {
   // Trade statuses
-  pending: { label: 'Pending', bg: 'bg-gray-100', text: 'text-gray-700', ring: 'ring-gray-200', dot: 'bg-gray-400' },
-  delivering: { label: 'Delivering', bg: 'bg-amber-100', text: 'text-amber-800', ring: 'ring-amber-200', dot: 'bg-amber-500', pulse: true },
-  completing: { label: 'Completing', bg: 'bg-blue-100', text: 'text-blue-800', ring: 'ring-blue-200', dot: 'bg-blue-500', pulse: true },
-  completed: { label: 'Completed', bg: 'bg-green-100', text: 'text-green-800', ring: 'ring-green-200', dot: 'bg-green-500' },
-  failed: { label: 'Failed', bg: 'bg-red-100', text: 'text-red-800', ring: 'ring-red-200', dot: 'bg-red-500' },
-  disputed: { label: 'Disputed', bg: 'bg-orange-100', text: 'text-orange-800', ring: 'ring-orange-200', dot: 'bg-orange-500', pulse: true },
+  pending: { label: 'Pending', bg: 'bg-gray-700/50', text: 'text-gray-400', ring: 'ring-gray-600', dot: 'bg-gray-400' },
+  delivering: { label: 'Delivering', bg: 'bg-accent-500/10', text: 'text-accent-400', ring: 'ring-accent-500/30', dot: 'bg-accent-400', pulse: true },
+  completing: { label: 'Completing', bg: 'bg-vblue-400/10', text: 'text-vblue-400', ring: 'ring-vblue-400/30', dot: 'bg-vblue-400', pulse: true },
+  completed: { label: 'Completed', bg: 'bg-volt-green/10', text: 'text-volt-green', ring: 'ring-volt-green/30', dot: 'bg-volt-green' },
+  failed: { label: 'Failed', bg: 'bg-danger-400/10', text: 'text-danger-400', ring: 'ring-danger-400/30', dot: 'bg-danger-400' },
+  disputed: { label: 'Disputed', bg: 'bg-orange-500/10', text: 'text-orange-400', ring: 'ring-orange-500/30', dot: 'bg-orange-400', pulse: true },
 
   // Escrow statuses
-  locked: { label: 'Locked', bg: 'bg-amber-100', text: 'text-amber-800', ring: 'ring-amber-200', dot: 'bg-amber-500', pulse: true },
-  released: { label: 'Released', bg: 'bg-green-100', text: 'text-green-800', ring: 'ring-green-200', dot: 'bg-green-500' },
-  refunded: { label: 'Refunded', bg: 'bg-red-100', text: 'text-red-800', ring: 'ring-red-200', dot: 'bg-red-500' },
-  partial: { label: 'Partial', bg: 'bg-blue-100', text: 'text-blue-800', ring: 'ring-blue-200', dot: 'bg-blue-500' },
+  locked: { label: 'Locked', bg: 'bg-accent-500/10', text: 'text-accent-400', ring: 'ring-accent-500/30', dot: 'bg-accent-400', pulse: true },
+  released: { label: 'Released', bg: 'bg-volt-green/10', text: 'text-volt-green', ring: 'ring-volt-green/30', dot: 'bg-volt-green' },
+  refunded: { label: 'Refunded', bg: 'bg-danger-400/10', text: 'text-danger-400', ring: 'ring-danger-400/30', dot: 'bg-danger-400' },
+  partial: { label: 'Partial', bg: 'bg-vblue-400/10', text: 'text-vblue-400', ring: 'ring-vblue-400/30', dot: 'bg-vblue-400' },
 
   // Listing statuses
-  active: { label: 'Active', bg: 'bg-green-100', text: 'text-green-800', ring: 'ring-green-200', dot: 'bg-green-500' },
-  sold: { label: 'Sold', bg: 'bg-blue-100', text: 'text-blue-800', ring: 'ring-blue-200', dot: 'bg-blue-500' },
-  expired: { label: 'Expired', bg: 'bg-gray-100', text: 'text-gray-700', ring: 'ring-gray-200', dot: 'bg-gray-400' },
-  cancelled: { label: 'Cancelled', bg: 'bg-red-100', text: 'text-red-800', ring: 'ring-red-200', dot: 'bg-red-500' },
+  active: { label: 'Active', bg: 'bg-volt-green/10', text: 'text-volt-green', ring: 'ring-volt-green/30', dot: 'bg-volt-green', pulse: true },
+  sold: { label: 'Sold', bg: 'bg-accent-500/10', text: 'text-accent-400', ring: 'ring-accent-500/30', dot: 'bg-accent-400' },
+  expired: { label: 'Expired', bg: 'bg-gray-700/50', text: 'text-gray-500', ring: 'ring-gray-600', dot: 'bg-gray-500' },
+  cancelled: { label: 'Cancelled', bg: 'bg-danger-400/10', text: 'text-danger-400', ring: 'ring-danger-400/30', dot: 'bg-danger-400' },
 }
 
 export default function StatusBadge({ status, label }) {

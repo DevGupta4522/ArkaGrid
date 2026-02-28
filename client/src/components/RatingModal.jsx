@@ -17,15 +17,15 @@ export default function RatingModal({ trade, onClose, onSubmit, isLoading }) {
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className="modal-content max-w-md">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">Rate This Trade</h2>
-                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-                        <X size={20} className="text-gray-400" />
+                    <h2 className="text-xl font-bold text-white font-heading">Rate This Trade</h2>
+                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 transition-colors">
+                        <X size={20} className="text-gray-500" />
                     </button>
                 </div>
 
                 <div className="text-center mb-6">
-                    <p className="text-sm text-gray-500 mb-4">
-                        How was your experience with <span className="font-semibold">{trade.other_party_name}</span>?
+                    <p className="text-sm text-gray-400 mb-4">
+                        How was your experience with <span className="font-semibold text-white">{trade.other_party_name}</span>?
                     </p>
 
                     {/* Stars */}
@@ -41,17 +41,15 @@ export default function RatingModal({ trade, onClose, onSubmit, isLoading }) {
                                 <Star
                                     size={36}
                                     className={`transition-colors duration-150 ${star <= (hoveredStar || rating)
-                                            ? 'text-amber-400 fill-amber-400'
-                                            : 'text-gray-200'
+                                        ? 'text-accent-400 fill-accent-400'
+                                        : 'text-gray-700'
                                         }`}
                                 />
                             </button>
                         ))}
                     </div>
 
-                    {/* Label */}
-                    <p className={`text-sm font-semibold h-5 transition-all ${rating > 0 ? 'text-amber-600' : 'text-gray-400'
-                        }`}>
+                    <p className={`text-sm font-semibold h-5 transition-all ${rating > 0 ? 'text-accent-400' : 'text-gray-600'}`}>
                         {labels[hoveredStar || rating] || 'Click to rate'}
                     </p>
                 </div>
@@ -67,7 +65,7 @@ export default function RatingModal({ trade, onClose, onSubmit, isLoading }) {
                         className="form-input resize-none"
                         maxLength={500}
                     />
-                    <p className="text-xs text-gray-400 mt-1 text-right">{comment.length}/500</p>
+                    <p className="text-xs text-gray-600 mt-1 text-right">{comment.length}/500</p>
                 </div>
 
                 {/* Actions */}
