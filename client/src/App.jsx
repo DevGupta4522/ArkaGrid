@@ -6,27 +6,19 @@ import Navbar from './components/Navbar'
 import Toast from './components/Toast'
 import ProtectedRoute from './components/ProtectedRoute'
 
-// Pages - Auth
+// Pages - Public
+import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-// Pages - Dashboard
+// Pages - Protected
 import Dashboard from './pages/Dashboard'
-
-// Pages - Marketplace (Consumer)
+import Profile from './pages/Profile'
 import Marketplace from './pages/Marketplace'
-
-// Pages - Listings (Prosumer)
 import MyListings from './pages/MyListings'
-
-// Pages - Trades
 import MyTrades from './pages/MyTrades'
 import TradeDetail from './pages/TradeDetail'
-
-// Pages - Wallet (Consumer)
 import Wallet from './pages/Wallet'
-
-// Pages - Admin
 import AdminDisputes from './pages/AdminDisputes'
 
 export default function App() {
@@ -38,7 +30,8 @@ export default function App() {
             <Navbar />
             <main className="flex-1">
               <Routes>
-                {/* Auth Routes */}
+                {/* Public Routes */}
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
@@ -48,6 +41,16 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Profile */}
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
                     </ProtectedRoute>
                   }
                 />
@@ -112,9 +115,6 @@ export default function App() {
                   }
                 />
 
-                {/* Redirect root to dashboard */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
@@ -129,10 +129,13 @@ export default function App() {
 
 function NotFound() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">404</h1>
-        <p className="text-gray-600 mb-6">Page not found</p>
+    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+      <div className="text-center animate-fade-in">
+        <div className="text-8xl font-extrabold bg-gradient-to-br from-green-500 to-emerald-600 bg-clip-text text-transparent mb-4">
+          404
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Page not found</h2>
+        <p className="text-gray-500 mb-8">The page you're looking for doesn't exist or has been moved.</p>
         <a href="/dashboard" className="btn-primary">
           Go to Dashboard
         </a>

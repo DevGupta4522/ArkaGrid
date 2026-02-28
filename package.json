@@ -5,12 +5,12 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "server:dev": "cd server && npm run dev",
-    "server:start": "cd server && npm start",
-    "server:db:setup": "cd server && npm run db:setup",
-    "client:dev": "cd client && npm run dev",
-    "client:build": "cd client && npm run build",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "server:dev": "npm --prefix server run dev",
+    "server:start": "npm --prefix server start",
+    "server:db:setup": "npm --prefix server run db:setup",
+    "client:dev": "npm --prefix client run dev",
+    "client:build": "npm --prefix client run build",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
     "build": "npm run client:build"
   },
   "keywords": [

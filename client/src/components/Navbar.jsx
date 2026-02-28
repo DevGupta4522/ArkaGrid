@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { LogOut, Wallet, Menu, X, Zap, LayoutDashboard, ShoppingBag, List, ArrowLeftRight, Shield } from 'lucide-react'
+import { LogOut, Wallet, Menu, X, Zap, LayoutDashboard, ShoppingBag, List, ArrowLeftRight, Shield, User } from 'lucide-react'
 import { useAuth } from '../hooks/useContext'
 
 export default function Navbar() {
@@ -31,8 +31,8 @@ export default function Navbar() {
 
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
-        ? 'bg-white/80 backdrop-blur-xl shadow-lg border-b border-green-100'
-        : 'bg-gradient-to-r from-green-700 via-green-600 to-emerald-600 shadow-md'
+      ? 'bg-white/80 backdrop-blur-xl shadow-lg border-b border-green-100'
+      : 'bg-gradient-to-r from-green-700 via-green-600 to-emerald-600 shadow-md'
       }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -55,12 +55,12 @@ export default function Navbar() {
                     key={link.path}
                     to={link.path}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isActive(link.path)
-                        ? scrolled
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-white/20 text-white'
-                        : scrolled
-                          ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                          : 'text-green-100 hover:bg-white/10 hover:text-white'
+                      ? scrolled
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-white/20 text-white'
+                      : scrolled
+                        ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        : 'text-green-100 hover:bg-white/10 hover:text-white'
                       }`}
                   >
                     <link.icon size={16} />
@@ -75,8 +75,8 @@ export default function Navbar() {
                   <Link
                     to="/wallet"
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${scrolled
-                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                        : 'bg-white/15 text-white hover:bg-white/25'
+                      ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                      : 'bg-white/15 text-white hover:bg-white/25'
                       }`}
                   >
                     <Wallet size={16} />
@@ -86,14 +86,23 @@ export default function Navbar() {
 
                 {/* User & Logout */}
                 <div className="flex items-center gap-3 ml-2">
-                  <div className={`text-sm font-medium ${scrolled ? 'text-gray-600' : 'text-green-100'}`}>
+                  <Link
+                    to="/profile"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isActive('/profile')
+                      ? scrolled ? 'bg-green-100 text-green-700' : 'bg-white/20 text-white'
+                      : scrolled ? 'text-gray-600 hover:bg-gray-100' : 'text-green-100 hover:bg-white/10'
+                      }`}
+                  >
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${scrolled ? 'bg-green-100 text-green-700' : 'bg-white/20 text-white'}`}>
+                      {user.name?.charAt(0)?.toUpperCase()}
+                    </div>
                     {user.name?.split(' ')[0]}
-                  </div>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${scrolled
-                        ? 'text-red-600 hover:bg-red-50'
-                        : 'text-red-200 hover:bg-red-500/20'
+                      ? 'text-red-600 hover:bg-red-50'
+                      : 'text-red-200 hover:bg-red-500/20'
                       }`}
                   >
                     <LogOut size={16} />
@@ -103,14 +112,14 @@ export default function Navbar() {
             ) : (
               <div className="flex gap-3">
                 <Link to="/login" className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${scrolled
-                    ? 'text-green-700 hover:bg-green-50'
-                    : 'text-white hover:bg-white/10'
+                  ? 'text-green-700 hover:bg-green-50'
+                  : 'text-white hover:bg-white/10'
                   }`}>
                   Login
                 </Link>
                 <Link to="/register" className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${scrolled
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-white text-green-700 hover:bg-green-50'
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-white text-green-700 hover:bg-green-50'
                   }`}>
                   Get Started
                 </Link>
@@ -141,12 +150,12 @@ export default function Navbar() {
                     key={link.path}
                     to={link.path}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive(link.path)
-                        ? scrolled
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-white/20 text-white'
-                        : scrolled
-                          ? 'text-gray-700 hover:bg-gray-50'
-                          : 'text-green-100 hover:bg-white/10'
+                      ? scrolled
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-white/20 text-white'
+                      : scrolled
+                        ? 'text-gray-700 hover:bg-gray-50'
+                        : 'text-green-100 hover:bg-white/10'
                       }`}
                   >
                     <link.icon size={18} />

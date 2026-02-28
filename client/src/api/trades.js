@@ -41,4 +41,9 @@ export const tradesAPI = {
     })
     return response.data
   },
+
+  rateTrade: async (tradeId, score, comment) => {
+    const response = await api.post(`/trades/${tradeId}/rate`, { score, comment })
+    return response.data
+  },
 }

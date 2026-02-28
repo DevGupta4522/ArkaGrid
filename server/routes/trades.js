@@ -8,7 +8,8 @@ import {
   confirmDelivery,
   confirmReceipt,
   raisDispute,
-  resolveDispute
+  resolveDispute,
+  rateTrade
 } from '../controllers/tradesController.js';
 
 const router = express.Router();
@@ -62,5 +63,8 @@ router.post('/:id/confirm-delivery', authenticateToken, requireRole('prosumer'),
 // Consumer routes
 router.post('/:id/confirm-receipt', authenticateToken, requireRole('consumer'), confirmReceipt);
 router.post('/:id/dispute', authenticateToken, requireRole('consumer'), raisDispute);
+
+// Rating (both roles)
+router.post('/:id/rate', authenticateToken, rateTrade);
 
 export default router;

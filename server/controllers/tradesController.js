@@ -109,7 +109,7 @@ export const createTrade = async (req, res, next) => {
       // Update listing units_remaining
       const newUnitsRemaining = listing.units_remaining - units_requested;
       const newStatus = newUnitsRemaining <= 0 ? 'sold' : 'active';
-      
+
       await client.query(
         'UPDATE energy_listings SET units_remaining = $1, status = $2 WHERE id = $3',
         [newUnitsRemaining, newStatus, listing_id]
@@ -381,8 +381,8 @@ export const confirmReceipt = async (req, res, next) => {
 
       res.json({
         success: true,
-        message: escrow_status === 'released' 
-          ? 'Receipt confirmed - payment released to seller' 
+        message: escrow_status === 'released'
+          ? 'Receipt confirmed - payment released to seller'
           : `Receipt confirmed - partial delivery. Seller credited ₹${settlement_amount}, refund ₹${refund_amount} to buyer`,
         data: {
           ...resultTrade,
@@ -552,6 +552,101 @@ export const resolveDispute = async (req, res, next) => {
     } finally {
       client.release();
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── Rate Trade ───
+export const rateTrade = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { score, comment } = req.body;
+    const userId = req.user.id;
+
+    if (!score || score < 1 || score > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rating score must be between 1 and 5',
+        code: 'INVALID_SCORE'
+      });
+    }
+
+    // Get the trade
+    const tradeResult = await pool.query(
+      'SELECT * FROM trades WHERE id = $1', [id]
+    );
+
+    if (tradeResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Trade not found',
+        code: 'TRADE_NOT_FOUND'
+      });
+    }
+
+    const trade = tradeResult.rows[0];
+
+    // Only completed trades can be rated
+    if (trade.trade_status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only completed trades can be rated',
+        code: 'TRADE_NOT_COMPLETED'
+      });
+    }
+
+    // User must be part of the trade
+    if (trade.prosumer_id !== userId && trade.consumer_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not part of this trade',
+        code: 'NOT_AUTHORIZED'
+      });
+    }
+
+    // Determine who is being rated
+    const ratedId = trade.prosumer_id === userId ? trade.consumer_id : trade.prosumer_id;
+
+    // Check if already rated
+    const existingRating = await pool.query(
+      'SELECT id FROM ratings WHERE trade_id = $1 AND rater_id = $2',
+      [id, userId]
+    );
+
+    if (existingRating.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'You have already rated this trade',
+        code: 'ALREADY_RATED'
+      });
+    }
+
+    // Insert rating
+    await pool.query(
+      'INSERT INTO ratings (trade_id, rater_id, rated_id, score, comment) VALUES ($1, $2, $3, $4, $5)',
+      [id, userId, ratedId, score, comment || null]
+    );
+
+    // Update rated user's average rating
+    const ratingStats = await pool.query(
+      'SELECT AVG(score)::DECIMAL(3,1) as avg_rating, COUNT(*) as count FROM ratings WHERE rated_id = $1',
+      [ratedId]
+    );
+
+    await pool.query(
+      'UPDATE users SET rating_avg = $1, rating_count = $2 WHERE id = $3',
+      [ratingStats.rows[0].avg_rating, ratingStats.rows[0].count, ratedId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Rating submitted successfully',
+      data: {
+        score,
+        rated_user_new_avg: parseFloat(ratingStats.rows[0].avg_rating)
+      }
+    });
   } catch (error) {
     next(error);
   }
