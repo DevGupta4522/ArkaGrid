@@ -6,10 +6,10 @@ seeds = true
 skip-lint = false
 
 [programs.devnet]
-arkagrid_escrow = "GQbVWuhBicqa4Uq6YUQi2deoqPto1DsLooFXP4eiNMaZ"
+arkagrid_escrow = "5fwjpuJMz8hfbtfVVMGfdq7Lu2WcDNoSpMf1HvkNU3Ga"
 
 [programs.mainnet]
-arkagrid_escrow = "GQbVWuhBicqa4Uq6YUQi2deoqPto1DsLooFXP4eiNMaZ"
+arkagrid_escrow = "5fwjpuJMz8hfbtfVVMGfdq7Lu2WcDNoSpMf1HvkNU3Ga"
 
 [registry]
 url = "https://api.apr.dev"

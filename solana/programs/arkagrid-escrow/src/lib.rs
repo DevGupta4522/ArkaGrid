@@ -9,7 +9,7 @@ pub mod state;
 use instructions::*;
 use instructions::resolve_dispute::DisputeResolution;
 
-declare_id!("GQbVWuhBicqa4Uq6YUQi2deoqPto1DsLooFXP4eiNMaZ");
+declare_id!("5fwjpuJMz8hfbtfVVMGfdq7Lu2WcDNoSpMf1HvkNU3Ga");
 
 #[program]
 pub mod arkagrid_escrow {
