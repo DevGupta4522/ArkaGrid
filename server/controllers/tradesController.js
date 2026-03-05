@@ -2,6 +2,12 @@ import { v4 as uuidv4 } from 'uuid';
 import pool from '../db/connection.js';
 import { PLATFORM_CONFIG } from '../../shared/constants.js';
 import { createNotification } from './notificationsController.js';
+import {
+  lockEscrowOnSolana,
+  confirmDeliveryOnSolana,
+  raiseDisputeOnSolana,
+  resolveDisputeOnSolana,
+} from '../services/solana.js';
 
 const DELIVERY_TIMEOUT_MS = PLATFORM_CONFIG.DELIVERY_TIMEOUT_MINUTES * 60 * 1000;
 const DELIVERY_THRESHOLD = PLATFORM_CONFIG.DELIVERY_CONFIRMATION_THRESHOLD;
@@ -119,6 +125,66 @@ export const createTrade = async (req, res, next) => {
 
       const trade = tradeResult.rows[0];
 
+      // ── Solana Blockchain Escrow (non-blocking) ────
+      try {
+        // Get wallet addresses for buyer and seller
+        const buyerWalletResult = await pool.query(
+          'SELECT wallet_address FROM users WHERE id = $1',
+          [consumerId]
+        );
+        const sellerWalletResult = await pool.query(
+          'SELECT wallet_address FROM users WHERE id = $1',
+          [listing.prosumer_id]
+        );
+
+        const buyerWallet = buyerWalletResult.rows[0]?.wallet_address;
+        const sellerWallet = sellerWalletResult.rows[0]?.wallet_address;
+
+        if (buyerWallet && sellerWallet) {
+          const solanaResult = await lockEscrowOnSolana({
+            tradeId: trade.id,
+            buyerWallet,
+            sellerWallet,
+            amountSol: total_amount / 100, // Convert INR to SOL equivalent
+            kwhRequested: units_requested,
+            pricePerKwh: listing.price_per_unit,
+            gridRegion: 'India',
+          });
+          await pool.query(
+            `UPDATE trades SET 
+             blockchain_tx_hash = $1,
+             blockchain_status = $2,
+             blockchain = 'solana',
+             consumer_wallet = $3,
+             prosumer_wallet = $4
+             WHERE id = $5`,
+            [
+              solanaResult.txHash,
+              solanaResult.simulated ? 'simulated' : 'locked',
+              buyerWallet,
+              sellerWallet,
+              trade.id,
+            ]
+          );
+          console.log(`[ArkaGrid Solana] ✅ Escrow locked for trade ${trade.id}`);
+        } else {
+          await pool.query(
+            `UPDATE trades SET blockchain_status = 'no_wallets' WHERE id = $1`,
+            [trade.id]
+          );
+        }
+      } catch (blockchainErr) {
+        console.error(
+          '[ArkaGrid] Solana escrow failed — DB escrow active:',
+          blockchainErr.message
+        );
+        await pool.query(
+          `UPDATE trades SET blockchain_status = 'failed' WHERE id = $1`,
+          [trade.id]
+        );
+        // DO NOT fail the API call — DB escrow is the safety net
+      }
+
       // Notify Prosumer
       await createNotification(
         null, // pool
@@ -134,8 +200,8 @@ export const createTrade = async (req, res, next) => {
         message: 'Trade created successfully - payment locked in escrow',
         data: {
           ...trade,
-          message: `Your ₹${total_amount} is safely locked. It will be released to the seller only after energy delivery is confirmed.`
-        }
+          message: `Your ₹${total_amount} is safely locked. It will be released to the seller only after energy delivery is confirmed.`,
+        },
       });
     } catch (error) {
       await client.query('ROLLBACK');
@@ -399,6 +465,30 @@ export const confirmReceipt = async (req, res, next) => {
 
       await client.query('COMMIT');
 
+      // ── Solana Settlement (non-blocking) ────
+      try {
+        if (trade.consumer_wallet && trade.prosumer_wallet) {
+          const solanaResult = await confirmDeliveryOnSolana({
+            tradeId: trade.id,
+            kwhDelivered: delivered,
+            buyerWallet: trade.consumer_wallet,
+            sellerWallet: trade.prosumer_wallet,
+            treasuryWallet: process.env.ARKAGRID_TREASURY_PUBKEY,
+          });
+          await pool.query(
+            `UPDATE trades SET 
+             delivery_tx_hash = $1,
+             blockchain_status = 'settled'
+             WHERE id = $2`,
+            [solanaResult.txHash, trade.id]
+          );
+          console.log(`[ArkaGrid Solana] ✅ Settled trade ${trade.id}`);
+        }
+      } catch (blockchainErr) {
+        console.error('[ArkaGrid] Solana settlement failed:', blockchainErr.message);
+        // DB settlement already committed — blockchain will be synced later
+      }
+
       // Notify prosumer
       await createNotification(
         null,
@@ -473,6 +563,19 @@ export const raisDispute = async (req, res, next) => {
       ['disputed', id]
     );
 
+    // ── Solana Dispute (non-blocking) ────
+    try {
+      if (trade.consumer_wallet) {
+        const solanaResult = await raiseDisputeOnSolana({
+          tradeId: trade.id,
+          buyerWallet: trade.consumer_wallet,
+        });
+        console.log(`[ArkaGrid Solana] ✅ Dispute raised on-chain for trade ${id}`);
+      }
+    } catch (blockchainErr) {
+      console.error('[ArkaGrid] Solana dispute raise failed:', blockchainErr.message);
+    }
+
     // Notify prosumer
     await createNotification(
       null,
@@ -483,7 +586,6 @@ export const raisDispute = async (req, res, next) => {
       trade.id
     );
 
-    // Note: In production, send notification to admin
     console.log(`📢 Dispute raised for trade ${id} by consumer ${consumerId}`);
 
     res.json({
@@ -584,6 +686,30 @@ export const resolveDispute = async (req, res, next) => {
       );
 
       await client.query('COMMIT');
+
+      // ── Solana Dispute Resolution (non-blocking) ────
+      try {
+        if (trade.consumer_wallet && trade.prosumer_wallet) {
+          const solanaResult = await resolveDisputeOnSolana({
+            tradeId: trade.id,
+            resolution,
+            kwhDelivered: units_delivered || 0,
+            sellerWallet: trade.prosumer_wallet,
+            buyerWallet: trade.consumer_wallet,
+            treasuryWallet: process.env.ARKAGRID_TREASURY_PUBKEY,
+          });
+          await pool.query(
+            `UPDATE trades SET 
+             delivery_tx_hash = $1,
+             blockchain_status = 'dispute_resolved'
+             WHERE id = $2`,
+            [solanaResult.txHash, trade.id]
+          );
+          console.log(`[ArkaGrid Solana] ✅ Dispute resolved on-chain for trade ${id}`);
+        }
+      } catch (blockchainErr) {
+        console.error('[ArkaGrid] Solana dispute resolution failed:', blockchainErr.message);
+      }
 
       // Notify both parties
       await createNotification(null, trade.prosumer_id, 'trade_resolved', 'Dispute Resolved', `Admin has resolved the dispute. Resolution: ${resolution}`, trade.id);

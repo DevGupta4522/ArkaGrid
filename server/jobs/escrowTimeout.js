@@ -1,5 +1,6 @@
 import pool from '../db/connection.js';
 import { createNotification } from '../controllers/notificationsController.js';
+import { cancelExpiredTradeOnSolana } from '../services/solana.js';
 
 export const processEscrowTimeouts = async () => {
   try {
@@ -56,6 +57,26 @@ export const processEscrowTimeouts = async () => {
           await createNotification(null, trade.prosumer_id, 'trade_failed', 'Trade Failed', `Delivery deadline passed for trade. Escrow refunded to buyer.`, trade.id);
 
           console.log(`✅ Trade ${trade.id} auto-refunded: delivery deadline expired`);
+
+          // ── Solana Blockchain Cancel (non-blocking) ────
+          try {
+            if (trade.consumer_wallet) {
+              const result = await cancelExpiredTradeOnSolana({
+                tradeId: trade.id,
+                buyerWallet: trade.consumer_wallet,
+              });
+              await pool.query(
+                `UPDATE trades SET 
+                 delivery_tx_hash = $1,
+                 blockchain_status = 'timeout_refunded'
+                 WHERE id = $2`,
+                [result.txHash, trade.id]
+              );
+              console.log(`[ArkaGrid Solana] ✅ Timeout cancel on-chain for trade ${trade.id}`);
+            }
+          } catch (blockchainErr) {
+            console.error('[ArkaGrid] Solana timeout cancel failed:', blockchainErr.message);
+          }
         } catch (error) {
           await client.query('ROLLBACK');
           throw error;

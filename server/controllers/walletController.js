@@ -172,3 +172,56 @@ export const getTransactions = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateWalletAddress = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { wallet_address, wallet_type } = req.body;
+
+    if (!wallet_address) {
+      return res.status(400).json({
+        success: false,
+        message: 'wallet_address is required',
+        code: 'INVALID_INPUT',
+      });
+    }
+
+    // Validate it's a valid Solana public key (32-44 chars, base58)
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    if (!base58Regex.test(wallet_address)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Solana wallet address',
+        code: 'INVALID_WALLET',
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE users SET wallet_address = $1, wallet_type = $2 WHERE id = $3 RETURNING id, wallet_address, wallet_type`,
+      [wallet_address, wallet_type || 'phantom', userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+        code: 'NOT_FOUND',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Wallet address linked successfully',
+      data: result.rows[0],
+    });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({
+        success: false,
+        message: 'This wallet address is already linked to another account',
+        code: 'WALLET_IN_USE',
+      });
+    }
+    next(error);
+  }
+};

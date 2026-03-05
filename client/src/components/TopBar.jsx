@@ -3,6 +3,7 @@ import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useContext'
 import { Wallet, User } from 'lucide-react'
 import NotificationDropdown from './NotificationDropdown'
+import WalletConnect from './WalletConnect'
 
 const pageTitles = {
     '/dashboard': 'Dashboard',
@@ -32,6 +33,9 @@ export default function TopBar() {
             <div className="flex items-center gap-3">
                 {/* Notification bell */}
                 <NotificationDropdown />
+
+                {/* Solana Wallet */}
+                <WalletConnect />
 
                 {/* Wallet balance (consumers) */}
                 {user?.role === 'consumer' && (

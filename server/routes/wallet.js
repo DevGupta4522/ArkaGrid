@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
-import { getBalance, addFunds, getTransactions } from '../controllers/walletController.js';
+import { getBalance, addFunds, getTransactions, updateWalletAddress } from '../controllers/walletController.js';
 
 const router = express.Router();
 
@@ -24,5 +24,6 @@ const validateAddFunds = [
 router.get('/balance', authenticateToken, getBalance);
 router.post('/add-funds', authenticateToken, requireRole('consumer'), validateAddFunds, addFunds);
 router.get('/transactions', authenticateToken, getTransactions);
+router.patch('/address', authenticateToken, updateWalletAddress);
 
 export default router;

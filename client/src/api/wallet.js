@@ -15,4 +15,12 @@ export const walletAPI = {
     const response = await api.get('/wallet/transactions')
     return response.data
   },
+
+  updateWalletAddress: async (walletAddress, walletType = 'phantom') => {
+    const response = await api.patch('/wallet/address', {
+      wallet_address: walletAddress,
+      wallet_type: walletType,
+    })
+    return response.data
+  },
 }

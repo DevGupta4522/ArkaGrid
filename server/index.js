@@ -52,8 +52,20 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Server is running' });
+app.get('/api/health', async (req, res) => {
+  let solanaStatus = { enabled: false, status: 'not_imported' };
+  try {
+    const { getSolanaStatus } = await import('./services/solana.js');
+    solanaStatus = await getSolanaStatus();
+  } catch (err) {
+    solanaStatus = { enabled: false, status: 'import_failed', error: err.message };
+  }
+  res.json({
+    success: true,
+    message: 'Server is running',
+    solana: solanaStatus,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // 404 handler

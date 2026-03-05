@@ -1,0 +1,22 @@
+[toolchain]
+anchor_version = "0.30.1"
+
+[features]
+seeds = true
+skip-lint = false
+
+[programs.devnet]
+arkagrid_escrow = "GQbVWuhBicqa4Uq6YUQi2deoqPto1DsLooFXP4eiNMaZ"
+
+[programs.mainnet]
+arkagrid_escrow = "GQbVWuhBicqa4Uq6YUQi2deoqPto1DsLooFXP4eiNMaZ"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "keypairs/authority.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
