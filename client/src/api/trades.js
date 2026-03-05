@@ -1,10 +1,12 @@
 import api from './config'
 
 export const tradesAPI = {
-  createTrade: async (listingId, unitsRequested) => {
+  createTrade: async (listingId, unitsRequested, razorpayOrderId = null, razorpayPaymentId = null) => {
     const response = await api.post('/trades', {
       listing_id: listingId,
       units_requested: unitsRequested,
+      razorpay_order_id: razorpayOrderId,
+      razorpay_payment_id: razorpayPaymentId
     })
     return response.data
   },

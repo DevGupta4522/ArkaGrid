@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { listingsAPI } from '../api/listings'
 import { tradesAPI } from '../api/trades'
 import { walletAPI } from '../api/wallet'
+import { paymentsAPI } from '../api/payments'
 import { useToast, useAuth } from '../hooks/useContext'
+import { useRazorpay } from '../hooks/useRazorpay'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { EmptyState } from '../components/EmptyState'
 import StatusBadge from '../components/StatusBadge'
@@ -16,6 +18,7 @@ export default function Marketplace() {
   const [selectedListing, setSelectedListing] = useState(null)
   const [units, setUnits] = useState('')
   const [isCreatingTrade, setIsCreatingTrade] = useState(false)
+  const { openPaymentModal, isProcessing: isGatewayLoading } = useRazorpay()
   const [walletBalance, setWalletBalance] = useState(parseFloat(user?.wallet_balance || 0))
   const [filters, setFilters] = useState({ maxPrice: 15, minRating: 0 })
   const [sortBy, setSortBy] = useState('cheapest')
@@ -38,17 +41,55 @@ export default function Marketplace() {
     } catch (err) { /* silent */ }
   }
 
-  const handleBuy = async (listing) => {
+  const handleBuyWithWallet = async (listing) => {
     if (!units || parseFloat(units) <= 0) { toast.error('Enter valid units'); return }
     if (parseFloat(units) > listing.units_remaining) { toast.error(`Max ${listing.units_remaining} kWh`); return }
     setIsCreatingTrade(true)
     try {
       await tradesAPI.createTrade(listing.id, parseFloat(units))
-      toast.success('Order placed! Payment locked in escrow 🔒')
+      toast.success('Order placed! Flow locked in escrow 🔒')
       setSelectedListing(null); setUnits('')
       await Promise.all([fetchListings(), fetchBalance()])
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to create trade') }
     finally { setIsCreatingTrade(false) }
+  }
+
+  const handleBuyWithRazorpay = async (listing, amount) => {
+    if (!units || parseFloat(units) <= 0) { toast.error('Enter valid units'); return }
+    setIsCreatingTrade(true)
+    try {
+      // 1. Get Razorpay Order ID from backend
+      const orderRes = await paymentsAPI.createOrder(amount)
+      
+      // 2. Open Razorpay Checkot
+      openPaymentModal({
+        amount,
+        orderId: orderRes.data.orderId,
+        onSuccess: async (response) => {
+          try {
+            // 3. Complete Trade after payment
+            await tradesAPI.createTrade(
+              listing.id, 
+              parseFloat(units), 
+              response.razorpay_order_id, 
+              response.razorpay_payment_id
+            )
+            toast.success('Payment successful! Trade created & escrow locked 🔒')
+            setSelectedListing(null); setUnits('')
+            fetchListings()
+          } catch (tradeErr) {
+            toast.error(tradeErr.response?.data?.message || 'Trade creation failed after payment')
+          }
+        },
+        onError: (err) => {
+          toast.error(err.message || 'Payment failed')
+        }
+      })
+    } catch (err) {
+      toast.error('Failed to initialize payment gateway')
+    } finally {
+      setIsCreatingTrade(false)
+    }
   }
 
   let filteredListings = listings.filter((l) =>
@@ -121,8 +162,9 @@ export default function Marketplace() {
 
       {selectedListing && (
         <BuyModal listing={selectedListing} units={units} setUnits={setUnits}
-          onBuy={handleBuy} onClose={() => { setSelectedListing(null); setUnits('') }}
-          isLoading={isCreatingTrade} userBalance={walletBalance} />
+          onBuyWallet={handleBuyWithWallet} onBuyRazorpay={handleBuyWithRazorpay}
+          onClose={() => { setSelectedListing(null); setUnits('') }}
+          isLoading={isCreatingTrade || isGatewayLoading} userBalance={walletBalance} />
       )}
     </div>
   )
@@ -195,7 +237,7 @@ function ListingCard({ listing, onBuy, delay }) {
   )
 }
 
-function BuyModal({ listing, units, setUnits, onBuy, onClose, isLoading, userBalance }) {
+function BuyModal({ listing, units, setUnits, onBuyWallet, onBuyRazorpay, onClose, isLoading, userBalance }) {
   const unitsNum = parseFloat(units) || 0
   const total = unitsNum * parseFloat(listing.price_per_unit)
   const platformFee = total * 0.025
@@ -253,16 +295,25 @@ function BuyModal({ listing, units, setUnits, onBuy, onClose, isLoading, userBal
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 btn-secondary" disabled={isLoading}>Cancel</button>
-          <button onClick={() => onBuy(listing)}
-            disabled={isLoading || !units || unitsNum <= 0 || !sufficient}
-            className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-volt-dark/30 border-t-volt-dark rounded-full animate-spin" /> Processing...
-              </span>
-            ) : `🔒 Lock ₹${grandTotal.toFixed(2)} in Escrow`}
-          </button>
+          <button onClick={onClose} className="w-1/3 btn-secondary" disabled={isLoading}>Cancel</button>
+
+          <div className="flex-1 flex gap-2">
+            <button onClick={() => onBuyWallet(listing)}
+              disabled={isLoading || !units || unitsNum <= 0 || !sufficient}
+              title={!sufficient ? "Insufficient Wallet Balance" : ""}
+              className="flex-1 px-4 py-2 bg-volt-dark hover:bg-volt-dark/80 text-white font-semibold rounded-xl border border-volt-border transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              🛒 Wallet
+            </button>
+            <button onClick={() => onBuyRazorpay(listing, grandTotal)}
+              disabled={isLoading || !units || unitsNum <= 0}
+              className="flex-[2] btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-volt-dark/30 border-t-volt-dark rounded-full animate-spin" /> Processing...
+                </span>
+              ) : `Pay ₹${grandTotal.toFixed(2)} (Card/UPI)`}
+            </button>
+          </div>
         </div>
       </div>
     </div>

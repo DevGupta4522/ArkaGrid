@@ -26,7 +26,20 @@ export const processEscrowTimeouts = async () => {
         try {
           await client.query('BEGIN');
 
-          // Refund consumer
+          // ── Razorpay Refund (non-blocking) ────
+          let razorpayRefundFailed = false;
+          if (trade.razorpay_payment_id) {
+            try {
+              const { issueRefund } = await import('../services/razorpay.js');
+              await issueRefund(trade.razorpay_payment_id);
+              console.log(`[Razorpay] ✅ Refund processed for trade ${trade.id}`);
+            } catch (rzpErr) {
+              console.error(`[Razorpay] ❌ Auto-refund failed for ${trade.id}:`, rzpErr.message);
+              razorpayRefundFailed = true;
+            }
+          }
+
+          // Refund consumer wallet (virtual/platform balance for non-fiat trades)
           await client.query('SELECT wallet_balance FROM users WHERE id = $1 FOR UPDATE', [trade.consumer_id]);
           await client.query(
             'UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2',
@@ -42,18 +55,22 @@ export const processEscrowTimeouts = async () => {
             [trade.units_requested, trade.listing_id]
           );
 
-          // Update trade
+          // Update trade status to failed
           await client.query(
             `UPDATE trades 
                SET trade_status = $1, escrow_status = $2
                WHERE id = $3`,
-            ['failed', 'refunded', trade.id]
+            ['failed', razorpayRefundFailed ? 'refund_failed' : 'refunded', trade.id]
           );
 
           await client.query('COMMIT');
 
           // Notify buyer and seller
-          await createNotification(null, trade.consumer_id, 'trade_failed', 'Trade Auto-Refunded', `The delivery deadline passed for ${trade.units_requested} kWh. ₹${trade.total_amount} has been refunded to your wallet.`, trade.id);
+          const refundMsg = trade.razorpay_payment_id 
+            ? `₹${trade.total_amount} is being refunded to your bank account/card via Razorpay (takes 5-7 days).`
+            : `₹${trade.total_amount} has been refunded to your ArkaGrid wallet.`;
+
+          await createNotification(null, trade.consumer_id, 'trade_failed', 'Trade Auto-Refunded', `The delivery deadline passed for ${trade.units_requested} kWh. ${refundMsg}`, trade.id);
           await createNotification(null, trade.prosumer_id, 'trade_failed', 'Trade Failed', `Delivery deadline passed for trade. Escrow refunded to buyer.`, trade.id);
 
           console.log(`✅ Trade ${trade.id} auto-refunded: delivery deadline expired`);

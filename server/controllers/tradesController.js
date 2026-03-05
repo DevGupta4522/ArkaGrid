@@ -15,7 +15,7 @@ const PLATFORM_FEE_PERCENT = PLATFORM_CONFIG.PLATFORM_FEE_PERCENT;
 
 export const createTrade = async (req, res, next) => {
   try {
-    const { listing_id, units_requested } = req.body;
+    const { listing_id, units_requested, razorpay_order_id, razorpay_payment_id } = req.body;
     const consumerId = req.user.id;
 
     // Validation
@@ -80,35 +80,39 @@ export const createTrade = async (req, res, next) => {
 
       const consumer_balance = consumerResult.rows[0].wallet_balance;
 
-      if (consumer_balance < total_amount) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient wallet balance. Need ₹${total_amount}, have ₹${consumer_balance}`,
-          code: 'INSUFFICIENT_BALANCE'
-        });
-      }
+      // If Razorpay payment isn't provided, use DB wallet balance
+      if (!razorpay_payment_id) {
+        if (consumer_balance < total_amount) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient wallet balance. Need ₹${total_amount}, have ₹${consumer_balance}`,
+            code: 'INSUFFICIENT_BALANCE'
+          });
+        }
 
-      // Deduct from consumer wallet
-      await client.query(
-        'UPDATE users SET wallet_balance = wallet_balance - $1 WHERE id = $2',
-        [total_amount, consumerId]
-      );
+        // Deduct from consumer wallet
+        await client.query(
+          'UPDATE users SET wallet_balance = wallet_balance - $1 WHERE id = $2',
+          [total_amount, consumerId]
+        );
+      }
 
       // Create trade
       const delivery_deadline = new Date(Date.now() + DELIVERY_TIMEOUT_MS);
       const tradeResult = await client.query(
         `INSERT INTO trades 
          (id, listing_id, prosumer_id, consumer_id, units_requested, price_per_unit, 
-          total_amount, platform_fee, trade_status, escrow_status, delivery_deadline)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          total_amount, platform_fee, trade_status, escrow_status, delivery_deadline, 
+          razorpay_order_id, razorpay_payment_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING id, listing_id, prosumer_id, consumer_id, units_requested, units_delivered,
                    price_per_unit, total_amount, platform_fee, trade_status, escrow_status,
-                   delivery_deadline, created_at`,
+                   delivery_deadline, created_at, razorpay_order_id, razorpay_payment_id`,
         [
           uuidv4(), listing_id, listing.prosumer_id, consumerId, units_requested,
           listing.price_per_unit, total_amount, platform_fee, 'delivering', 'locked',
-          delivery_deadline
+          delivery_deadline, razorpay_order_id || null, razorpay_payment_id || null
         ]
       );
 

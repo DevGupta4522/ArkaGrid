@@ -19,6 +19,7 @@ import walletRoutes from './routes/wallet.js';
 import adminRoutes from './routes/admin.js';
 import notificationsRoutes from './routes/notifications.js';
 import metersRoutes from './routes/meters.js';
+import paymentsRoutes from './routes/payments.js';
 import { startEscrowTimeoutJob } from './jobs/escrowTimeout.js';
 import { securityHeaders, apiLimiter } from './middleware/security.js';
 
@@ -33,6 +34,14 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
+
+// Webhook MUST be mounted before express.json() to maintain raw body buffer
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }), (req, res, next) => {
+  // Pass the raw request to the payments router 
+  // (We'll extract just the webhook logic into the router)
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -52,6 +61,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/meters', metersRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Health check — all services
 app.get('/api/health', async (req, res) => {
