@@ -49,7 +49,7 @@ async function initSolana() {
         meterAuthority = Keypair.fromSecretKey(new Uint8Array(keypairData));
 
         // Load IDL
-        const idlPath = path.resolve(path.join(__dirname, '../solana/target/idl/arkagrid_escrow.json'));
+        const idlPath = path.resolve(path.join(__dirname, '../../solana/target/idl/arkagrid_escrow.json'));
 
         if (!fs.existsSync(idlPath)) {
             console.warn(`[ArkaGrid Solana] IDL not found at ${idlPath} — running in DB-only mode`);

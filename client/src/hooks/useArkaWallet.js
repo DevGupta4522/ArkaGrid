@@ -42,10 +42,12 @@ export function useArkaWallet() {
 
             // Get SOL balance
             try {
-                const connection = new window.solanaWeb3?.Connection(
-                    import.meta.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
-                    'confirmed'
-                )
+                const connection = window.solanaWeb3
+                    ? new window.solanaWeb3.Connection(
+                        import.meta.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+                        'confirmed'
+                    )
+                    : null;
                 if (connection) {
                     const bal = await connection.getBalance(response.publicKey)
                     setBalance((bal / 1e9).toFixed(4))

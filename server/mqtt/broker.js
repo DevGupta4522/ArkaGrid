@@ -9,7 +9,7 @@
  *   arkagrid/trades/{tradeId}/status     – trade state updates
  *   arkagrid/alerts/{userId}             – anomaly alerts
  */
-import Aedes from 'aedes';
+import { Aedes } from 'aedes';
 import { createServer } from 'net';
 import { WebSocketServer } from 'ws';
 import http from 'http';
