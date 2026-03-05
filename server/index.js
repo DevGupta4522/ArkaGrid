@@ -18,6 +18,7 @@ import tradesRoutes from './routes/trades.js';
 import walletRoutes from './routes/wallet.js';
 import adminRoutes from './routes/admin.js';
 import notificationsRoutes from './routes/notifications.js';
+import metersRoutes from './routes/meters.js';
 import { startEscrowTimeoutJob } from './jobs/escrowTimeout.js';
 import { securityHeaders, apiLimiter } from './middleware/security.js';
 
@@ -50,9 +51,11 @@ app.use('/api/trades', tradesRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/meters', metersRoutes);
 
-// Health check
+// Health check — all services
 app.get('/api/health', async (req, res) => {
+  // Solana status
   let solanaStatus = { enabled: false, status: 'not_imported' };
   try {
     const { getSolanaStatus } = await import('./services/solana.js');
@@ -60,11 +63,36 @@ app.get('/api/health', async (req, res) => {
   } catch (err) {
     solanaStatus = { enabled: false, status: 'import_failed', error: err.message };
   }
+
+  // MQTT status 
+  let mqttStatus = { status: 'not_imported', connectedMeters: 0 };
+  try {
+    const { getMQTTStatus } = await import('./mqtt/broker.js');
+    mqttStatus = getMQTTStatus();
+  } catch (err) {
+    mqttStatus = { status: 'import_failed', error: err.message };
+  }
+
+  // Database status
+  let dbStatus = 'connected';
+  try {
+    const pool = (await import('./db/connection.js')).default;
+    await pool.query('SELECT 1');
+  } catch {
+    dbStatus = 'error';
+  }
+
   res.json({
     success: true,
-    message: 'Server is running',
-    solana: solanaStatus,
+    status: 'operational',
+    version: '2.0.0',
+    app: 'ArkaGrid',
     timestamp: new Date().toISOString(),
+    services: {
+      database: dbStatus,
+      solana: solanaStatus,
+      mqtt: mqttStatus,
+    }
   });
 });
 
@@ -80,14 +108,58 @@ app.use((req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🚀 P2P Energy Trading Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔌 Database: ${process.env.DATABASE_URL || 'postgresql://localhost:5432/p2p_energy'}\n`);
+// ── Start server ────────────────────────────────────
+app.listen(PORT, async () => {
+  const network = process.env.SOLANA_NETWORK || 'devnet';
+  const programId = process.env.SOLANA_PROGRAM_ID || 'not set';
 
-  // Start background jobs
+  // 1. Start MQTT broker
+  let mqttRunning = false;
+  try {
+    const { startMQTTBroker } = await import('./mqtt/broker.js');
+    startMQTTBroker();
+    mqttRunning = true;
+  } catch (err) {
+    console.warn(`[ArkaGrid MQTT] Broker failed to start: ${err.message}`);
+  }
+
+  // 2. Start meter handlers
+  if (mqttRunning) {
+    try {
+      const { startMeterHandler } = await import('./mqtt/meterHandler.js');
+      startMeterHandler();
+    } catch (err) {
+      console.warn(`[ArkaGrid MQTT] Handlers failed: ${err.message}`);
+    }
+  }
+
+  // 3. Start meter simulator
+  if (mqttRunning) {
+    try {
+      const { startMeterSimulator } = await import('./mqtt/meterSimulator.js');
+      startMeterSimulator();
+    } catch (err) {
+      console.warn(`[ArkaGrid Simulator] Failed: ${err.message}`);
+    }
+  }
+
+  // 4. Start escrow timeout job  
   startEscrowTimeoutJob();
+
+  // 5. Print startup banner
+  console.log(`
+╔══════════════════════════════════════════════╗
+║            ArkaGrid Server v2.0              ║
+║        P2P Energy Trading Platform           ║
+╠══════════════════════════════════════════════╣
+║  API:        http://localhost:${PORT}             ║
+║  MQTT TCP:   mqtt://localhost:1883           ║
+║  MQTT WS:    ws://localhost:8883             ║
+║  Blockchain: Solana ${network.padEnd(25)}║
+║  Program:    ${(programId?.slice(0, 16) + '...').padEnd(27)}║
+║  Simulator:  ${mqttRunning ? 'Active (5min intervals)    ' : 'Disabled                   '}║
+╚══════════════════════════════════════════════╝
+  `);
 });
 
 // Graceful shutdown

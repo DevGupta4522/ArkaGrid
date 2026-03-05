@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { tradesAPI } from '../api/trades'
 import { useToast, useAuth } from '../hooks/useContext'
+import { useMeterData } from '../hooks/useMeterData'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import CountdownTimer from '../components/CountdownTimer'
-import { ArrowLeft, Zap, Clock, DollarSign, Users, CheckCircle, ExternalLink, Link2, Shield, Copy, Leaf } from 'lucide-react'
+import { ArrowLeft, Zap, Clock, DollarSign, Users, CheckCircle, ExternalLink, Link2, Shield, Copy, Leaf, Activity, Wifi, WifiOff } from 'lucide-react'
 
 const PROGRAM_ID = import.meta.env.VITE_SOLANA_PROGRAM_ID || '5fwjpuJMz8hfbtfVVMGfdq7Lu2WcDNoSpMf1HvkNU3Ga'
 const EXPLORER_BASE = import.meta.env.VITE_SOLANA_EXPLORER || 'https://explorer.solana.com'
@@ -22,8 +23,19 @@ export default function TradeDetail() {
   const toast = useToast()
   const [trade, setTrade] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [secondsAgo, setSecondsAgo] = useState(0)
+  const meterData = useMeterData(user?.id, id)
 
   useEffect(() => { fetchTrade() }, [id])
+
+  // Update "seconds ago" counter
+  useEffect(() => {
+    if (!meterData.lastUpdated) return
+    const interval = setInterval(() => {
+      setSecondsAgo(Math.floor((Date.now() - meterData.lastUpdated.getTime()) / 1000))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [meterData.lastUpdated])
 
   const fetchTrade = async () => {
     try {
@@ -217,6 +229,64 @@ export default function TradeDetail() {
                className="inline-flex items-center gap-1.5 mt-3 text-xs text-green-400 hover:text-green-300 font-mono">
               View on Solana <ExternalLink size={12} />
             </a>
+          )}
+        </div>
+      )}
+
+      {/* 📡 Live Meter Feed */}
+      {isActive && (
+        <div className="card mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white flex items-center gap-2 font-heading">
+              <Activity size={18} className="text-volt-green" /> Live Meter Feed
+            </h3>
+            <div className="flex items-center gap-2">
+              {meterData.isConnected ? (
+                <>
+                  <Wifi size={14} className="text-volt-green" />
+                  <span className="text-xs text-volt-green font-semibold">LIVE</span>
+                  <span className="live-dot" />
+                </>
+              ) : (
+                <>
+                  <WifiOff size={14} className="text-gray-500" />
+                  <span className="text-xs text-gray-500">Offline</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {meterData.tradeStatus ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-volt-dark/60 rounded-xl p-3 border border-volt-border text-center">
+                  <p className="text-[10px] text-gray-500 mb-1">Outgoing</p>
+                  <p className="text-lg font-bold font-mono text-accent-400">{meterData.tradeStatus.kwhOut?.toFixed(3) || '—'}</p>
+                  <p className="text-[10px] text-gray-600">kWh</p>
+                </div>
+                <div className="bg-volt-dark/60 rounded-xl p-3 border border-volt-border text-center">
+                  <p className="text-[10px] text-gray-500 mb-1">Incoming</p>
+                  <p className="text-lg font-bold font-mono text-vblue-400">{meterData.tradeStatus.kwhIn?.toFixed(3) || '—'}</p>
+                  <p className="text-[10px] text-gray-600">kWh</p>
+                </div>
+                <div className="bg-volt-dark/60 rounded-xl p-3 border border-volt-border text-center">
+                  <p className="text-[10px] text-gray-500 mb-1">Delivery</p>
+                  <p className={`text-lg font-bold font-mono ${(meterData.tradeStatus.deliveryPct || 0) >= 98 ? 'text-volt-green' : 'text-accent-400'}`}>{meterData.tradeStatus.deliveryPct || '0'}%</p>
+                  <p className="text-[10px] text-gray-600">complete</p>
+                </div>
+              </div>
+              {meterData.lastUpdated && (
+                <p className="text-[10px] text-gray-600 text-right">
+                  Last updated: {secondsAgo < 60 ? `${secondsAgo}s ago` : `${Math.floor(secondsAgo / 60)}m ago`}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Activity size={24} className="text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Waiting for meter data...</p>
+              <p className="text-xs text-gray-600 mt-1">Readings arrive every 5 minutes</p>
+            </div>
           )}
         </div>
       )}
