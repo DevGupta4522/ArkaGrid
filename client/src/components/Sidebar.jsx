@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useContext'
 import {
     LayoutDashboard, Zap, List, ArrowLeftRight, Wallet, Shield,
-    LogOut, MapPin, ChevronLeft, ChevronRight, User
+    LogOut, MapPin, ChevronLeft, ChevronRight, User, Activity, Info
 } from 'lucide-react'
 
 export default function Sidebar() {
@@ -109,8 +109,9 @@ export default function Sidebar() {
 }
 
 function getNavLinks(role) {
+    let links = []
     if (role === 'prosumer') {
-        return [
+        links = [
             { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
             { path: '/marketplace', label: 'Marketplace', icon: Zap },
             { path: '/my-listings', label: 'My Listings', icon: List },
@@ -118,7 +119,7 @@ function getNavLinks(role) {
             { path: '/map', label: 'Energy Map', icon: MapPin },
         ]
     } else if (role === 'consumer') {
-        return [
+        links = [
             { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
             { path: '/marketplace', label: 'Marketplace', icon: Zap },
             { path: '/my-trades', label: 'My Trades', icon: ArrowLeftRight },
@@ -126,11 +127,18 @@ function getNavLinks(role) {
             { path: '/map', label: 'Energy Map', icon: MapPin },
         ]
     } else if (role === 'admin') {
-        return [
+        links = [
             { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
             { path: '/admin/disputes', label: 'Disputes', icon: Shield },
             { path: '/map', label: 'Energy Map', icon: MapPin },
         ]
     }
-    return []
+    
+    // Common links for everyone
+    if (links.length > 0) {
+        links.push({ path: '/status', label: 'System Status', icon: Activity })
+        links.push({ path: '/about', label: 'About ArkaGrid', icon: Info })
+    }
+    
+    return links
 }

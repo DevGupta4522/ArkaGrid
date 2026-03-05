@@ -24,6 +24,8 @@ import MyTrades from './pages/MyTrades'
 import TradeDetail from './pages/TradeDetail'
 import Wallet from './pages/Wallet'
 import AdminDisputes from './pages/AdminDisputes'
+import SystemStatus from './pages/SystemStatus'
+import About from './pages/About'
 
 function AppLayout() {
   const { isAuthenticated, user } = useAuth()
@@ -53,6 +55,8 @@ function AppLayout() {
               <Route path="/map" element={<ProtectedRoute><EnergyMap /></ProtectedRoute>} />
               <Route path="/wallet" element={<ProtectedRoute requiredRole="consumer"><Wallet /></ProtectedRoute>} />
               <Route path="/admin/disputes" element={<ProtectedRoute requiredRole="admin"><AdminDisputes /></ProtectedRoute>} />
+              <Route path="/status" element={<ProtectedRoute><SystemStatus /></ProtectedRoute>} />
+              <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
