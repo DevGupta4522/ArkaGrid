@@ -10,7 +10,7 @@ import {
   Zap, Sun, Battery, TrendingUp, TrendingDown, DollarSign,
   Activity, Users, ShoppingBag, ArrowRight, Shield,
   Wifi, WifiOff, BarChart3, BatteryCharging, Gauge, Bolt,
-  ArrowLeftRight, CircleDollarSign, Star, Plus
+  ArrowLeftRight, CircleDollarSign, Star, Plus, Leaf, ExternalLink
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -66,12 +66,16 @@ function generateHourlyData() {
   return data
 }
 
+const EXPLORER_BASE = 'https://explorer.solana.com'
+const CLUSTER = 'devnet'
+
 // ─── Main Dashboard ───
 export default function Dashboard() {
   const { user } = useAuth()
   const toast = useToast()
   const [loading, setLoading] = useState(true)
   const [trades, setTrades] = useState([])
+  const [carbonCredits, setCarbonCredits] = useState(null)
   const liveData = useSimulatedData()
   const [hourlyData] = useState(() => generateHourlyData())
 
@@ -79,8 +83,20 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [tradesRes] = await Promise.allSettled([tradesAPI.getMyTrades()])
+      const promises = [tradesAPI.getMyTrades()]
+      // Fetch carbon credits for prosumers
+      if (user?.role === 'prosumer') {
+        promises.push(
+          fetch('/api/trades/carbon-credits', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          }).then(r => r.json()).catch(() => null)
+        )
+      }
+      const [tradesRes, carbonRes] = await Promise.allSettled(promises)
       if (tradesRes.status === 'fulfilled') setTrades(tradesRes.value.data || [])
+      if (carbonRes?.status === 'fulfilled' && carbonRes.value?.success) {
+        setCarbonCredits(carbonRes.value.data)
+      }
     } catch (err) { /* silent */ }
     finally { setLoading(false) }
   }
@@ -280,6 +296,71 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── 🌱 Carbon Credits (Prosumer Only) ── */}
+      {user?.role === 'prosumer' && (
+        <div className="card mb-6 bg-gradient-to-br from-green-900/10 to-transparent border border-green-500/15">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-gray-400 flex items-center gap-2">
+              <Leaf size={16} className="text-green-400" />
+              🌱 Carbon Credits — Verified on Solana
+            </h3>
+            {carbonCredits && (
+              <span className="text-xs text-green-400 font-semibold">{carbonCredits.total_credits} credits</span>
+            )}
+          </div>
+
+          {/* Hero stat */}
+          <div className="flex items-center gap-6 mb-5">
+            <div>
+              <p className="text-3xl md:text-4xl font-extrabold text-green-400 font-mono tabular-nums">
+                {carbonCredits?.total_kwh_verified?.toFixed(1) || '0.0'}
+                <span className="text-lg text-green-400/60 ml-1">kWh</span>
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Total clean energy verified on Solana</p>
+            </div>
+            <div className="hidden md:block w-px h-12 bg-green-500/20" />
+            <div className="hidden md:block">
+              <p className="text-xs text-gray-500">🌱 Carbon credit recorded for every verified kWh</p>
+              <p className="text-xs text-gray-600 mt-0.5">Each credit represents clean solar energy replacing fossil fuels</p>
+            </div>
+          </div>
+
+          {/* Credit list */}
+          {carbonCredits?.credits?.length > 0 ? (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {carbonCredits.credits.slice(0, 10).map((credit) => (
+                <div key={credit.id} className="flex items-center justify-between bg-volt-dark/60 rounded-xl p-3 text-sm border border-volt-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Leaf size={14} className="text-green-400" />
+                    </div>
+                    <div>
+                      <p className="font-mono text-white text-xs">{credit.kwh.toFixed(2)} kWh</p>
+                      <p className="text-[10px] text-gray-600">{new Date(credit.date).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-volt-green font-mono">₹{credit.earned.toFixed(0)}</span>
+                    {credit.tx_hash && (
+                      <a href={`${EXPLORER_BASE}/tx/${credit.tx_hash}?cluster=${CLUSTER}`}
+                         target="_blank" rel="noopener noreferrer"
+                         className="p-1 hover:bg-white/5 rounded-lg transition-colors">
+                        <ExternalLink size={12} className="text-green-400" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500">No Solana-verified trades yet</p>
+              <p className="text-xs text-gray-600 mt-1">Carbon credits appear after trades are settled on-chain</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Recent Trades ── */}
       {trades.length > 0 && (

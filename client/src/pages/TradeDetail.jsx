@@ -5,7 +5,16 @@ import { useToast, useAuth } from '../hooks/useContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import CountdownTimer from '../components/CountdownTimer'
-import { ArrowLeft, Zap, Clock, DollarSign, Users, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Zap, Clock, DollarSign, Users, CheckCircle, ExternalLink, Link2, Shield, Copy, Leaf } from 'lucide-react'
+
+const PROGRAM_ID = import.meta.env.VITE_SOLANA_PROGRAM_ID || '5fwjpuJMz8hfbtfVVMGfdq7Lu2WcDNoSpMf1HvkNU3Ga'
+const EXPLORER_BASE = import.meta.env.VITE_SOLANA_EXPLORER || 'https://explorer.solana.com'
+const CLUSTER = 'devnet'
+
+function shortenHash(hash, chars = 8) {
+  if (!hash || hash.length < chars * 2) return hash || '—'
+  return `${hash.slice(0, chars)}...${hash.slice(-chars)}`
+}
 
 export default function TradeDetail() {
   const { id } = useParams()
@@ -23,6 +32,11 @@ export default function TradeDetail() {
       setTrade(response.data)
     } catch (err) { toast.error('Failed to load trade details') }
     finally { setLoading(false) }
+  }
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Copied to clipboard!')
   }
 
   if (loading) return <LoadingSpinner message="Loading trade..." />
@@ -102,6 +116,111 @@ export default function TradeDetail() {
         </div>
       </div>
 
+      {/* ⛓️ On-Chain Record — Solana Blockchain */}
+      {trade.blockchain_tx_hash && trade.blockchain_status !== 'simulated' ? (
+        <div className="card mb-6 bg-gradient-to-br from-volt-green/5 to-transparent border border-volt-green/20">
+          <h3 className="font-bold text-white mb-4 flex items-center gap-2 font-heading">
+            <Link2 size={18} className="text-volt-green" /> ⛓️ Verified on Solana
+          </h3>
+          <div className="space-y-3 text-sm">
+            {/* Escrow TX */}
+            <div className="flex items-center justify-between bg-volt-dark/60 rounded-xl p-3 border border-volt-border">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Escrow Transaction</p>
+                <p className="font-mono text-volt-green text-xs">{shortenHash(trade.blockchain_tx_hash)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => copyToClipboard(trade.blockchain_tx_hash)} className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                  <Copy size={14} className="text-gray-500" />
+                </button>
+                <a href={`${EXPLORER_BASE}/tx/${trade.blockchain_tx_hash}?cluster=${CLUSTER}`} target="_blank" rel="noopener noreferrer"
+                   className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                  <ExternalLink size={14} className="text-volt-green" />
+                </a>
+              </div>
+            </div>
+
+            {/* Settlement TX */}
+            {trade.delivery_tx_hash && (
+              <div className="flex items-center justify-between bg-volt-dark/60 rounded-xl p-3 border border-volt-border">
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Settlement Transaction</p>
+                  <p className="font-mono text-vblue-400 text-xs">{shortenHash(trade.delivery_tx_hash)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => copyToClipboard(trade.delivery_tx_hash)} className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                    <Copy size={14} className="text-gray-500" />
+                  </button>
+                  <a href={`${EXPLORER_BASE}/tx/${trade.delivery_tx_hash}?cluster=${CLUSTER}`} target="_blank" rel="noopener noreferrer"
+                     className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                    <ExternalLink size={14} className="text-vblue-400" />
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Program ID */}
+            <div className="flex items-center justify-between bg-volt-dark/60 rounded-xl p-3 border border-volt-border">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">ArkaGrid Program</p>
+                <p className="font-mono text-gray-400 text-xs">{shortenHash(PROGRAM_ID)}</p>
+              </div>
+              <a href={`${EXPLORER_BASE}/address/${PROGRAM_ID}?cluster=${CLUSTER}`} target="_blank" rel="noopener noreferrer"
+                 className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                <ExternalLink size={14} className="text-gray-500" />
+              </a>
+            </div>
+
+            {/* Badge */}
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2">
+                <Shield size={14} className="text-volt-green" />
+                <span className="text-xs text-volt-green font-semibold">✅ Tamper-proof — Solana blockchain</span>
+              </div>
+              <span className="text-[10px] text-gray-600">Confirmed in &lt; 1 second at &lt; $0.001</span>
+            </div>
+          </div>
+        </div>
+      ) : trade.blockchain_status === 'simulated' || !trade.blockchain_tx_hash ? (
+        <div className="card mb-6 bg-accent-500/5 border border-accent-500/20">
+          <h3 className="font-bold text-white mb-4 flex items-center gap-2 font-heading">
+            <Shield size={18} className="text-accent-400" /> 📋 Secured in ArkaGrid Database
+          </h3>
+          <p className="text-sm text-gray-400 mb-3">
+            This trade is secured by ArkaGrid's database escrow. Connect a Phantom wallet to enable blockchain verification for future trades.
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-500/10 text-accent-400 text-xs font-semibold border border-accent-500/20">
+              {trade.blockchain_status === 'simulated' ? '🔒 DB Escrow Active' : '⏳ Blockchain Pending'}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Carbon Credit (for prosumer on settled trades) */}
+      {trade.blockchain_status === 'settled' && trade.prosumer_id === user?.id && (
+        <div className="card mb-6 bg-gradient-to-br from-green-900/20 to-transparent border border-green-500/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center border border-green-500/20">
+              <Leaf size={20} className="text-green-400" />
+            </div>
+            <div>
+              <p className="font-bold text-green-400 text-sm">🌱 Carbon Credit Issued</p>
+              <p className="text-xs text-gray-400">
+                ArkaGrid verified {parseFloat(trade.units_delivered || trade.units_requested).toFixed(2)} kWh of clean solar energy.
+                Carbon credit recorded on Solana.
+              </p>
+            </div>
+          </div>
+          {trade.delivery_tx_hash && (
+            <a href={`${EXPLORER_BASE}/tx/${trade.delivery_tx_hash}?cluster=${CLUSTER}`} target="_blank" rel="noopener noreferrer"
+               className="inline-flex items-center gap-1.5 mt-3 text-xs text-green-400 hover:text-green-300 font-mono">
+              View on Solana <ExternalLink size={12} />
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Meter Readings */}
       {trade.meter_readings?.length > 0 && (
         <div className="card mb-6">
@@ -132,6 +251,8 @@ export default function TradeDetail() {
           <TimelineRow label="Escrow Locked" time={trade.escrow_locked_at} />
           {trade.delivery_confirmed_at && <TimelineRow label="Delivery Confirmed" time={trade.delivery_confirmed_at} />}
           {trade.payment_released_at && <TimelineRow label="Payment Released" time={trade.payment_released_at} />}
+          {trade.blockchain_tx_hash && <TimelineRow label="⛓️ Recorded on Solana" time={trade.created_at} />}
+          {trade.delivery_tx_hash && <TimelineRow label="⛓️ Settled on Solana" time={trade.delivery_confirmed_at || trade.payment_released_at} />}
         </div>
       </div>
     </div>

@@ -51,6 +51,40 @@ const validateResolveDispute = [
 // Authenticated routes — specific paths MUST come before parameterized /:id
 router.get('/my', authenticateToken, getMyTrades);
 
+// Carbon Credits — prosumer's Solana-verified energy trades
+router.get('/carbon-credits', authenticateToken, async (req, res) => {
+  try {
+    const { rows } = await (await import('../db/index.js')).pool.query(`
+      SELECT id, units_delivered, units_requested, delivery_tx_hash,
+             blockchain_status, created_at, price_per_unit, total_amount
+      FROM trades
+      WHERE prosumer_id = $1
+        AND blockchain_status = 'settled'
+      ORDER BY created_at DESC
+    `, [req.user.id]);
+
+    const totalKwh = rows.reduce((sum, r) => sum + parseFloat(r.units_delivered || r.units_requested || 0), 0);
+
+    res.json({
+      success: true,
+      data: {
+        total_kwh_verified: parseFloat(totalKwh.toFixed(3)),
+        total_credits: rows.length,
+        credits: rows.map(r => ({
+          id: r.id,
+          kwh: parseFloat(r.units_delivered || r.units_requested || 0),
+          tx_hash: r.delivery_tx_hash,
+          earned: parseFloat(r.total_amount || 0),
+          date: r.created_at,
+        }))
+      }
+    });
+  } catch (err) {
+    console.error('[ArkaGrid Carbon] Error fetching carbon credits:', err.message);
+    res.status(500).json({ success: false, message: 'Failed to fetch carbon credits' });
+  }
+});
+
 // Consumer routes
 router.post('/', authenticateToken, requireRole('consumer'), validateCreateTrade, createTrade);
 
