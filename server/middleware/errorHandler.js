@@ -4,6 +4,16 @@ export const errorHandler = (err, req, res, next) => {
   console.error(`[${timestamp}] ERROR: ${err.message}`);
   console.error('Stack:', err.stack);
 
+  const networkErrorCodes = new Set(['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EHOSTUNREACH', 'ECONNRESET']);
+  const aggregateCode = err?.errors?.find?.(inner => inner?.code)?.code;
+  const effectiveCode = err?.code || aggregateCode;
+  const errorMessage = String(err?.message || '').toLowerCase();
+  const isNetworkTimeout =
+    networkErrorCodes.has(effectiveCode) ||
+    errorMessage.includes('connection timeout') ||
+    errorMessage.includes('timeout expired') ||
+    errorMessage.includes('connect etimedout');
+
   // Handle validation errors
   if (err.array && typeof err.array === 'function') {
     return res.status(400).json({
@@ -48,10 +58,18 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  if (isNetworkTimeout) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database is unavailable. Check DATABASE_URL and confirm PostgreSQL is reachable.',
+      code: 'DB_UNAVAILABLE'
+    });
+  }
+
   // Generic error response
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error',
-    code: err.code || 'SERVER_ERROR'
+    code: effectiveCode || 'SERVER_ERROR'
   });
 };

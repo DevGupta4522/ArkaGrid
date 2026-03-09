@@ -127,7 +127,7 @@ app.listen(PORT, async () => {
   let mqttRunning = false;
   try {
     const { startMQTTBroker } = await import('./mqtt/broker.js');
-    startMQTTBroker();
+    await startMQTTBroker();
     mqttRunning = true;
   } catch (err) {
     console.warn(`[ArkaGrid MQTT] Broker failed to start: ${err.message}`);
